@@ -1,0 +1,97 @@
+<resources>
+    <!-- 品牌名:各语言一致。 -->
+    <string name="app_name">Roamer</string>
+
+    <!-- ===== 顶栏 / 分区 ===== -->
+    <string name="cd_refresh_all">刷新全部信息</string>
+    <string name="section_quick_switch">快速切换</string>
+    <string name="section_sim_details">SIM 详情</string>
+    <string name="section_appearance">外观</string>
+    <string name="section_log">日志</string>
+    <string name="section_override_to">覆写为</string>
+
+    <!-- ===== 外观 / 主题 ===== -->
+    <string name="theme_system">跟随系统</string>
+    <string name="theme_light">日间</string>
+    <string name="theme_dark">夜间</string>
+
+    <!-- ===== 操作行 ===== -->
+    <string name="restore_all">还原全部</string>
+    <string name="restore_all_count">还原全部(%1$d)</string>
+
+    <!-- ===== 空态 / 状态消息 ===== -->
+    <string name="log_ready">就绪。</string>
+    <string name="no_active_sim">未发现活跃 SIM(或未刷新)。</string>
+    <string name="nothing_to_restore">没有已覆写的卡,无需还原。</string>
+    <string name="no_sim_to_mask">未发现活跃 SIM,无法伪装。</string>
+    <string name="already_masked">所有卡的归属地已是 %1$s,无需伪装。</string>
+
+    <!-- ===== Shizuku 横幅 ===== -->
+    <string name="shizuku_authorized">Shizuku 已授权</string>
+    <string name="shizuku_not_running">Shizuku 未运行,请先启动</string>
+    <string name="shizuku_not_authorized">Shizuku 未授权</string>
+    <string name="action_grant">申请</string>
+
+    <!-- ===== SIM 卡片 ===== -->
+    <string name="slot_label">卡槽 %1$d</string>
+    <string name="value_original">原始值</string>
+    <string name="value_current">当前值</string>
+    <string name="field_country">国家/地区</string>
+    <string name="field_carrier">运营商名</string>
+    <string name="badge_overridden">已覆写</string>
+    <string name="cd_overridden">已覆盖</string>
+    <string name="action_restore">还原</string>
+    <string name="action_override">覆写</string>
+    <string name="action_override_to">覆写→%1$s</string>
+
+    <!-- ===== 日志徽标级别 ===== -->
+    <string name="log_level_success">成功</string>
+    <string name="log_level_error">失败</string>
+    <string name="log_level_partial">部分成功</string>
+    <string name="log_level_info">提示</string>
+
+    <!-- ===== Controller 结果消息 ===== -->
+    <string name="err_shizuku_unavailable">Shizuku 未授权或未运行</string>
+    <string name="err_no_target_sim">无目标卡槽</string>
+    <!-- 操作动词,作为 %1$s 代入下方结果模板。 -->
+    <string name="op_override">覆写</string>
+    <string name="op_restore">还原</string>
+    <string name="result_single_success">%1$s 成功(%2$s)</string>
+    <string name="result_single_timeout">%1$s 未在 %2$dms 内生效(%3$s;看 logcat RoamerPriv)</string>
+    <string name="result_all_success">%1$s %2$d 卡全部成功(%3$s)</string>
+    <string name="result_all_fail">%1$s 失败:0/%2$d 生效(%3$s;看 logcat RoamerPriv)</string>
+    <string name="result_partial">%1$s 部分成功:%2$d/%3$d 生效,未生效 subId=%4$s(看 logcat RoamerPriv)</string>
+    <string name="result_fail">%1$s 失败: %2$s</string>
+    <string name="detail_iso_restored">iso 已回真值</string>
+
+    <!-- ===== 国家名 ===== -->
+    <!-- 常用调试地区 -->
+    <string name="country_us">美国</string>
+    <string name="country_jp">日本</string>
+    <string name="country_kr">韩国</string>
+    <string name="country_hk">中国香港</string>
+    <string name="country_tw">中国台湾</string>
+    <!-- 其余 -->
+    <string name="country_cn">中国大陆</string>
+    <string name="country_mo">中国澳门</string>
+    <string name="country_sg">新加坡</string>
+    <string name="country_my">马来西亚</string>
+    <string name="country_th">泰国</string>
+    <string name="country_vn">越南</string>
+    <string name="country_id">印度尼西亚</string>
+    <string name="country_ph">菲律宾</string>
+    <string name="country_in">印度</string>
+    <string name="country_ca">加拿大</string>
+    <string name="country_br">巴西</string>
+    <string name="country_gb">英国</string>
+    <string name="country_de">德国</string>
+    <string name="country_fr">法国</string>
+    <string name="country_it">意大利</string>
+    <string name="country_es">西班牙</string>
+    <string name="country_nl">荷兰</string>
+    <string name="country_ch">瑞士</string>
+    <string name="country_ru">俄罗斯</string>
+    <string name="country_ae">阿联酋</string>
+    <string name="country_au">澳大利亚</string>
+    <string name="country_nz">新西兰</string>
+</resources>

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="Theme.Roamer" parent="android:Theme.Material.Light.NoActionBar" />
+
+    <!--
+      Android 12+ system splash screen (back-ported to API 30 via androidx core-splashscreen).
+      Background = brand harbor blue (matching the icon background), the icon uses the adaptive
+      foreground layer (SIM/globe/orbit), switching to postSplashScreenTheme once the first frame is
+      ready. Replaces the default "white background + bare centered icon".
+    -->
+    <style name="Theme.Roamer.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/splash_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher_foreground</item>
+        <item name="windowSplashScreenIconBackgroundColor">@color/splash_background</item>
+        <item name="postSplashScreenTheme">@style/Theme.Roamer</item>
+    </style>
+</resources>

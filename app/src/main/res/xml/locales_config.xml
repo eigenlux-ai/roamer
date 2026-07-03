@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Per-app supported locales. Declaring this enables the system per-app language picker
+  (Settings > Apps > Roamer > Language) on Android 13+ (API 33+). English is the default
+  (res/values), so any non-Chinese system locale falls back to English; res/values-zh
+  serves Chinese. On API < 33 there is no system picker, but the app still follows the
+  system locale via the same resource resolution.
+-->
+<locale-config xmlns:android="http://schemas.android.com/apk/res/android">
+    <locale android:name="en" />
+    <locale android:name="zh" />
+</locale-config>

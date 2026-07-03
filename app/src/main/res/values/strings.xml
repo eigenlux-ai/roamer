@@ -1,0 +1,97 @@
+<resources>
+    <!-- Brand name: same across locales. -->
+    <string name="app_name">Roamer</string>
+
+    <!-- ===== Top bar / sections ===== -->
+    <string name="cd_refresh_all">Refresh all</string>
+    <string name="section_quick_switch">Quick switch</string>
+    <string name="section_sim_details">SIM details</string>
+    <string name="section_appearance">Appearance</string>
+    <string name="section_log">Log</string>
+    <string name="section_override_to">Override to</string>
+
+    <!-- ===== Appearance / theme ===== -->
+    <string name="theme_system">System</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
+
+    <!-- ===== Action row ===== -->
+    <string name="restore_all">Restore all</string>
+    <string name="restore_all_count">Restore all (%1$d)</string>
+
+    <!-- ===== Empty / status messages ===== -->
+    <string name="log_ready">Ready.</string>
+    <string name="no_active_sim">No active SIM found (or not refreshed yet).</string>
+    <string name="nothing_to_restore">No overridden SIM; nothing to restore.</string>
+    <string name="no_sim_to_mask">No active SIM found; cannot mask.</string>
+    <string name="already_masked">All SIMs are already in %1$s; no masking needed.</string>
+
+    <!-- ===== Shizuku banner ===== -->
+    <string name="shizuku_authorized">Shizuku authorized</string>
+    <string name="shizuku_not_running">Shizuku not running; start it first</string>
+    <string name="shizuku_not_authorized">Shizuku not authorized</string>
+    <string name="action_grant">Grant</string>
+
+    <!-- ===== SIM card ===== -->
+    <string name="slot_label">Slot %1$d</string>
+    <string name="value_original">Original</string>
+    <string name="value_current">Current</string>
+    <string name="field_country">Country/Region</string>
+    <string name="field_carrier">Carrier name</string>
+    <string name="badge_overridden">Overridden</string>
+    <string name="cd_overridden">Overridden</string>
+    <string name="action_restore">Restore</string>
+    <string name="action_override">Override</string>
+    <string name="action_override_to">Override → %1$s</string>
+
+    <!-- ===== Log chip level labels ===== -->
+    <string name="log_level_success">Success</string>
+    <string name="log_level_error">Failed</string>
+    <string name="log_level_partial">Partial</string>
+    <string name="log_level_info">Info</string>
+
+    <!-- ===== Controller result messages ===== -->
+    <string name="err_shizuku_unavailable">Shizuku not authorized or not running</string>
+    <string name="err_no_target_sim">No target SIM slot</string>
+    <!-- Operation nouns, substituted as %1$s into the result templates below. -->
+    <string name="op_override">Override</string>
+    <string name="op_restore">Restore</string>
+    <string name="result_single_success">%1$s succeeded (%2$s)</string>
+    <string name="result_single_timeout">%1$s did not take effect within %2$dms (%3$s; see logcat RoamerPriv)</string>
+    <string name="result_all_success">%1$s: all %2$d SIMs succeeded (%3$s)</string>
+    <string name="result_all_fail">%1$s failed: 0/%2$d effective (%3$s; see logcat RoamerPriv)</string>
+    <string name="result_partial">%1$s partial: %2$d/%3$d effective, subId=%4$s not effective (see logcat RoamerPriv)</string>
+    <string name="result_fail">%1$s failed: %2$s</string>
+    <string name="detail_iso_restored">iso restored to real value</string>
+
+    <!-- ===== Country names ===== -->
+    <!-- Common debug regions -->
+    <string name="country_us">United States</string>
+    <string name="country_jp">Japan</string>
+    <string name="country_kr">South Korea</string>
+    <string name="country_hk">Hong Kong, China</string>
+    <string name="country_tw">Taiwan, China</string>
+    <!-- The rest -->
+    <string name="country_cn">Chinese Mainland</string>
+    <string name="country_mo">Macao, China</string>
+    <string name="country_sg">Singapore</string>
+    <string name="country_my">Malaysia</string>
+    <string name="country_th">Thailand</string>
+    <string name="country_vn">Vietnam</string>
+    <string name="country_id">Indonesia</string>
+    <string name="country_ph">Philippines</string>
+    <string name="country_in">India</string>
+    <string name="country_ca">Canada</string>
+    <string name="country_br">Brazil</string>
+    <string name="country_gb">United Kingdom</string>
+    <string name="country_de">Germany</string>
+    <string name="country_fr">France</string>
+    <string name="country_it">Italy</string>
+    <string name="country_es">Spain</string>
+    <string name="country_nl">Netherlands</string>
+    <string name="country_ch">Switzerland</string>
+    <string name="country_ru">Russia</string>
+    <string name="country_ae">United Arab Emirates</string>
+    <string name="country_au">Australia</string>
+    <string name="country_nz">New Zealand</string>
+</resources>

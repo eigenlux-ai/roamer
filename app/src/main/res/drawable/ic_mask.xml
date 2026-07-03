@@ -1,0 +1,15 @@
+<!--
+  Guy Fawkes mask (source: Material Design Icons, mdi:guy-fawkes-mask, 24x24).
+  Used for the "one-tap disguise" button icon + the stamp watermark in the top-right corner of an
+  overridden SIM slot. fillColor is a placeholder only; the actual color comes from the Compose-side
+  Icon tint (content color for the button, semi-transparent amber for the stamp).
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M21,13a9,9 0,0 1,-9 9a9,9 0,0 1,-9,-9l0.03,-8.57C5.68,2.88 8.76,2 12.05,2c3.25,0 6.31,0.87 8.95,2.38zM13,19.93c3.39,-0.49 6,-3.43 6,-6.93V5.59C16.9,4.57 14.54,4 12.05,4c-2.55,0 -4.97,0.6 -7.11,1.66L5,13c0,3.5 2.63,6.44 6,6.93V18h2zM11,16H8l-2,-3l3,1h1l1,-1h2l1,1h1l3,-1l-2,3h-3l-1,-1zM6,9.03c0.64,-0.63 1.5,-0.98 2.5,-0.98c0.95,0 1.84,0.35 2.5,0.98c-0.66,0.62 -1.55,0.97 -2.5,0.97c-1,0 -1.86,-0.35 -2.5,-0.97M13,9.03c0.64,-0.63 1.5,-0.98 2.5,-0.98c0.95,0 1.84,0.35 2.5,0.98c-0.66,0.62 -1.55,0.97 -2.5,0.97c-1,0 -1.86,-0.35 -2.5,-0.97" />
+</vector>
