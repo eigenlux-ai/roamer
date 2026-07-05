@@ -14,3 +14,8 @@ build/
 .cxx
 .kotlin
 local.properties
+
+# Signing — never commit keystores or their passwords
+*.jks
+*.keystore
+keystore.properties
