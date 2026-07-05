@@ -5,6 +5,12 @@
     <!-- Required to enumerate active SIMs (SubscriptionManager); requested dynamically at runtime -->
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
 
+    <!-- Phase-2 region override: list installed apps in the "selected apps" picker so the user can pick
+         which apps' region follows the primary SIM. Roamer is sideloaded (no Play policy), and the
+         locale is written through Shizuku, not this permission. -->
+    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"
+        tools:ignore="QueryAllPackagesPermission" />
+
     <!-- Android 14/16 override path: launch instrumentation targeting our own package, adopting shell permissions to perform the override -->
     <instrumentation
         android:name="com.eigenlux.roamer.core.PrivilegedOverrideInstrumentation"

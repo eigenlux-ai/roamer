@@ -13,6 +13,7 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -46,6 +47,8 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -87,8 +90,11 @@ import androidx.core.view.WindowCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import com.eigenlux.roamer.core.CarrierConfigController
+import com.eigenlux.roamer.core.LocaleOverrideController
+import com.eigenlux.roamer.core.RegionLogic
 import com.eigenlux.roamer.core.ShizukuManager
 import com.eigenlux.roamer.core.SimInfo
+import com.eigenlux.roamer.data.AppLocaleStore
 import com.eigenlux.roamer.data.CarrierPresets
 import com.eigenlux.roamer.data.CountryPreset
 import com.eigenlux.roamer.data.CountryPresets
@@ -175,6 +181,9 @@ private fun RoamerApp(
     // can never overlap and clobber each other's process-level shell delegation.
     val opMutex = remember { Mutex() }
     var shizukuGranted by remember { mutableStateOf(ShizukuManager.hasPermission()) }
+    // Region override (phase-2): master switch state + whether the full-screen app picker is shown.
+    var regionMasterOn by remember { mutableStateOf(AppLocaleStore.isMasterOn(ctx)) }
+    var showAppPicker by remember { mutableStateOf(false) }
     var shizukuAlive by remember { mutableStateOf(ShizukuManager.isBinderAlive()) }
 
     fun refreshShizuku() {
@@ -194,7 +203,13 @@ private fun RoamerApp(
             val loaded = withContext(Dispatchers.IO) {
                 runCatching { CarrierConfigController.loadSims(ctx) }.getOrNull()
             }
-            if (loaded != null) sims = loaded
+            if (loaded != null) {
+                sims = loaded
+                // Phase-2: reconcile enrolled apps' region locale with the (possibly changed) primary slot.
+                withContext(Dispatchers.IO) {
+                    runCatching { LocaleOverrideController.sync(ctx, RegionLogic.primaryOf(loaded)) }
+                }
+            }
             refreshing = false
         }
     }
@@ -240,7 +255,13 @@ private fun RoamerApp(
                 val loaded = withContext(Dispatchers.IO) {
                     runCatching { CarrierConfigController.loadSims(ctx) }.getOrNull()
                 }
-                if (loaded != null) sims = loaded
+                if (loaded != null) {
+                    sims = loaded
+                    // Phase-2: after a SIM override/restore, push the new region to enrolled apps (or restore them).
+                    withContext(Dispatchers.IO) {
+                        runCatching { LocaleOverrideController.sync(ctx, RegionLogic.primaryOf(loaded)) }
+                    }
+                }
             } finally {
                 // Only cleared here, after the whole op (trigger + up-to-5s poll + reload) completes.
                 busy = false
@@ -274,7 +295,13 @@ private fun RoamerApp(
         run { CarrierConfigController.setOverrideAll(ctx, subIds, iso, name) }
     }
 
-    Scaffold(
+    // Region override app picker takes over the whole screen when open; otherwise the main screen.
+    if (showAppPicker) {
+        AppPickerScreen(
+            primary = RegionLogic.primaryOf(sims),
+            onClose = { showAppPicker = false },
+        )
+    } else Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.app_name), style = MaterialTheme.typography.titleLarge) },
@@ -400,6 +427,63 @@ private fun RoamerApp(
                         }
                     }
                 }
+            }
+
+            // —— Region override (phase-2): follow the primary slot to override selected apps' region ——
+            Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                Text(stringResource(R.string.section_region_override), style = MaterialTheme.typography.titleSmall)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.md),
+                ) {
+                    Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+                        Text(stringResource(R.string.region_follow_primary), style = MaterialTheme.typography.bodyMedium)
+                        Text(
+                            stringResource(R.string.region_follow_hint),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Switch(
+                        checked = regionMasterOn,
+                        enabled = shizukuGranted,
+                        onCheckedChange = { on ->
+                            regionMasterOn = on
+                            scope.launch(Dispatchers.IO) {
+                                LocaleOverrideController.setMaster(ctx, on, RegionLogic.primaryOf(sims))
+                            }
+                        },
+                    )
+                }
+                // "Selected apps" row → opens the full-screen picker; only tappable when the master switch is on.
+                Surface(
+                    onClick = { showAppPicker = true },
+                    enabled = regionMasterOn && shizukuGranted,
+                    shape = RoundedCornerShape(Spacing.md),
+                    color = MaterialTheme.colorScheme.surfaceVariant,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.md, vertical = Spacing.sm),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(stringResource(R.string.region_selected_apps), style = MaterialTheme.typography.bodyMedium)
+                        Spacer(Modifier.weight(1f))
+                        Text(
+                            stringResource(R.string.region_selected_count, AppLocaleStore.enrolled(ctx).size),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Spacer(Modifier.width(Spacing.sm))
+                        Text("›", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+                Text(
+                    stringResource(R.string.region_honesty),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
 
             // —— Appearance: theme switch ——
@@ -689,12 +773,28 @@ private fun SimCard(
                 )
             }
 
-            // ⑤ "Overridden" badge (bottom-left) · action buttons (right-aligned)
+            // ⑤ Badges (bottom-left): "primary slot" (default subscription, >= 2 SIMs) + "overridden" ·
+            //    action buttons (right-aligned).
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
             ) {
+                // Primary slot = the SIM apps read via no-arg TelephonyManager (getDefaultSubscriptionId).
+                // Secondary color to stay distinct from the tertiary/amber "overridden" badge.
+                if (sim.isDefaultSub) {
+                    Text(
+                        stringResource(R.string.badge_default_sub),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer,
+                        modifier = Modifier
+                            .background(
+                                MaterialTheme.colorScheme.secondaryContainer,
+                                RoundedCornerShape(8.dp),
+                            )
+                            .padding(horizontal = Spacing.sm, vertical = Spacing.xs),
+                    )
+                }
                 if (sim.overridden) {
                     Text(
                         stringResource(R.string.badge_overridden),

@@ -6,6 +6,7 @@
     <string name="cd_refresh_all">Refresh all</string>
     <string name="section_quick_switch">Quick switch</string>
     <string name="section_sim_details">SIM details</string>
+    <string name="section_region_override">Region override</string>
     <string name="section_appearance">Appearance</string>
     <string name="section_log">Log</string>
     <string name="section_override_to">Override to</string>
@@ -40,6 +41,7 @@
     <string name="field_carrier">Carrier name</string>
     <string name="badge_overridden">Overridden</string>
     <string name="cd_overridden">Overridden</string>
+    <string name="badge_default_sub">Primary</string>
     <string name="action_restore">Restore</string>
     <string name="action_override">Override</string>
     <string name="action_override_to">Override → %1$s</string>
@@ -94,4 +96,18 @@
     <string name="country_ae">United Arab Emirates</string>
     <string name="country_au">Australia</string>
     <string name="country_nz">New Zealand</string>
+
+    <!-- ===== Region override (phase-2) ===== -->
+    <string name="region_follow_primary">Follow primary slot to override app region</string>
+    <string name="region_follow_hint">Re-applied when Roamer runs a SIM op or refreshes — not a background service.</string>
+    <string name="region_selected_apps">Selected apps</string>
+    <string name="region_selected_count">%1$d selected</string>
+    <string name="region_honesty">Many apps derive region from IP / GPS / account, not locale — whether an app is affected depends on which source it reads.</string>
+    <!-- App picker subpage -->
+    <string name="app_picker_title">Select apps</string>
+    <string name="app_picker_search">Search apps</string>
+    <string name="app_picker_show_system">System apps</string>
+    <string name="app_picker_loading">Loading apps…</string>
+    <string name="app_picker_empty">No matching apps</string>
+    <string name="cd_back">Back</string>
 </resources>

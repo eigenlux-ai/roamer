@@ -1,6 +1,6 @@
 # CLAUDE.md — Roamer
 
-A no-root **SIM home-region / carrier-environment override debugging tool** (Android, Kotlin + Jetpack Compose). It borrows shell privileges through Shizuku and, via instrumentation, overrides the system CarrierConfig so developers can simulate different country/carrier environments on their own device.
+A no-root **SIM home-region / carrier-environment override debugging tool** (Android, Kotlin + Jetpack Compose). It borrows shell privileges through Shizuku to (1) override the system CarrierConfig — via instrumentation — so a SIM reads as another country/carrier, and (2) mirror that region onto a selected set of apps through their per-app locale. Developers can thus simulate different country/carrier environments on their own device.
 
 - **applicationId / namespace**: `com.eigenlux.roamer`
 - **Target device**: a Samsung device / Android 16, Shizuku authorized
@@ -34,22 +34,26 @@ com.eigenlux.roamer/
 │   ├── CarrierConfigController           # enumerate SIMs + trigger + poll to confirm; live overridden decision; N/M batch result
 │   ├── InstrumentationTrigger            # Shizuku → IActivityManager.startInstrumentation + NO_RESTART
 │   ├── PrivilegedOverrideInstrumentation # privileged proxy: shell-permission delegation + baseline-free two-step restore; dual entry (App / headless am instrument)
-│   └── PrivilegedSubscriptionReader      # binder direct-read of ISub, bypassing App-side ICCID redaction (read-only display)
-├── data/   # pure static presets (no hidden APIs, unit-testable)
-│   ├── CountryPresets                    # 27 regions: iso + mcc + @StringRes nameRes (country names via resources, follow locale)
-│   └── CarrierPresets                    # carrier names linked by country ISO, descending by market share (first = default)
+│   ├── PrivilegedSubscriptionReader      # binder direct-read of ISub, bypassing App-side ICCID redaction (read-only display)
+│   ├── RegionLogic                       # pure decision logic for per-app region override (primaryOf / deriveLocale / desiredTag), no Android imports → JVM-testable
+│   └── LocaleOverrideController          # per-app locale read/apply/clear via Shizuku ILocaleManager; sync/enroll/unenroll
+├── data/   # pure static presets + local state (no hidden APIs, unit-testable)
+│   ├── CountryPresets                    # 27 regions: iso + mcc + @StringRes nameRes + defaultLocale (BCP-47, per-app region source)
+│   ├── CarrierPresets                    # carrier names linked by country ISO, descending by market share (first = default)
+│   └── AppLocaleStore                    # SharedPreferences state for per-app region override: masterOn + enrolled set + per-app baseline
 ├── ui/theme/  # Compose theme
 │   ├── Color / Theme (RoamerTheme + successColor) / Shape (RoamerShapes + Spacing)
 │   ├── Type (Typography + RoamerCode monospace code-value style)
 │   └── ThemeMode (SYSTEM/LIGHT/DARK + ThemeModeStore, SharedPreferences persistence)
-└── MainActivity.kt                       # single-screen Compose: overview (device/Shizuku/dual-SIM mini) → SIM detail cards → appearance → log
+├── AppPickerScreen.kt                    # full-screen app picker for region override (QUERY_ALL_PACKAGES enumeration, lazy icons, enroll/unenroll)
+└── MainActivity.kt                       # single-screen Compose: overview → SIM detail cards → region override → appearance → log
 ```
 
 **Convention**: privileged logic lives only in `core/`; everything else is plain Kotlin, unit-testable / previewable.
 
 **Resources**: `res/values` (English, default) + `res/values-zh` (Chinese) + `res/xml/locales_config.xml` (per-app language) + `res/drawable` (ic_mask stamp / ic_sim_landscape).
 
-**Tests** (JVM): `MccUtilTest` (MCC→ISO fallback table), `PresetsTest` (preset consistency), `StringsParityTest` (the two strings.xml must share the same keys + placeholders).
+**Tests** (JVM): `MccUtilTest` (MCC→ISO fallback table), `PresetsTest` (preset consistency incl. `defaultLocale` region==iso), `RegionLogicTest` (region-override primaryOf/deriveLocale/desiredTag), `StringsParityTest` (the two strings.xml must share the same keys + placeholders).
 
 ## Core invariants (must follow)
 
@@ -108,7 +112,39 @@ Originally three defects sharing a root cause: **instrumentation is fire-and-for
 - **#2 false success with no service** (documented limitation): the restore criterion `realIso.isBlank() || …` treats "cannot obtain the real value" (no SIM / airplane mode) as satisfied → the UI may report "restored" while the device still carries the override. Fix (future): a blank realIso should be failure / pending.
 - **#3 layer-clear not verified** (benign): restore success only checks step ① (ISO back to real value), not step ② (`overrideConfig(null)` truly cleared). The privileged side already polls before clearing, so residue is benign; not user-visible.
 
+## Region override (per-app locale)
+
+The second lever on the same "where does this app think I am" axis: mirror the **primary slot**'s
+(possibly masked) region onto a user-selected set of apps via each app's per-app locale. Default off,
+opt-in per app. Invariants:
+
+- **Primary slot** = `RegionLogic.primaryOf` = the `isDefaultSub` SIM (single SIM → that SIM). The
+  default subscription is the **voice** SIM on phones, not the data SIM (see memory
+  `default-sub-is-voice-not-data`).
+- **Language + region**: writes the country's default BCP-47 (`CountryPreset.defaultLocale`, e.g. JP→`ja-JP`),
+  so the app switches language too, not region-only.
+- **Mirror the SIM override state**: enrolled apps follow the primary country **only while it is
+  overridden**; when the SIM is restored or the master switch is off, apps revert to their captured
+  baseline (`RegionLogic.desiredTag`). Keeps the device clean, consistent with the Safety contract.
+- **Baseline** (unlike the SIM feature): locale is readable, so capture each app's pre-existing locale on
+  enroll and restore exactly that on unenroll — never blind-clear.
+- **Serialized**: `enroll`/`unenroll`/`setMaster`/`sync` run off-main from three sites (master switch,
+  each picker checkbox, `run{}`/`refreshAll`); they share one reentrant monitor in
+  `LocaleOverrideController` so the store's read-modify-write and capture-baseline-then-apply are atomic
+  (else a race could record an already-overridden value as the baseline → an unclearable override).
+- **No background service**: `LocaleOverrideController.sync` is re-run on every Roamer-initiated SIM op
+  and on refresh (`MainActivity` `run{}` / `refreshAll`), not live in the background.
+- **Privilege**: `setApplicationLocales` via Shizuku `ILocaleManager` runs under plain shell identity
+  (no instrumentation / reject-shell dance — verified `cmd locale` works as shell on this device). The
+  `ILocaleManager` AIDL signature drifts across versions (A14 added a trailing `boolean fromDelegate`),
+  so `LocaleOverrideController.invokeByName` resolves the method by name and fills args by type. See
+  memory `ilocalemanager-signature-drift`.
+- **`QUERY_ALL_PACKAGES`**: declared solely to enumerate installed apps in the picker; the locale is
+  written through Shizuku, not this permission. Roamer is sideloaded (no Play policy cost).
+- **Verified on device** (a Samsung device / Android 16): enroll app + primary masked US → `en-US`;
+  primary → JP → `ja-JP`; SIM restored / master off / unenroll → baseline `[]`.
+
 ## Docs index (`docs/`)
 
 - `PRODUCT.md` product strategy · `DESIGN.md` design system
-- Planning / feature / dev-landing docs were removed when phase 1 wrapped; historical decisions are captured in "Verified facts" above and in memory.
+- Historical decisions are captured in "Verified facts" above and in memory.

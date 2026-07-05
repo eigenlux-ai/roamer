@@ -46,6 +46,15 @@ object CarrierConfigController {
         // (requires USE_ICC_AUTH_WITH_DEVICE_IDENTIFIER); read the true value via Shizuku binder direct
         // read (shell identity), gracefully degrading to empty on failure.
         val iccIds = runCatching { PrivilegedSubscriptionReader.readIccIds() }.getOrDefault(emptyMap())
+        // The subscription an app's no-arg TelephonyManager reads bind to (getDefaultSubscriptionId).
+        // Only surface it when there are >= 2 SIMs, where it disambiguates which card apps actually read;
+        // on a single SIM the badge would be redundant noise.
+        val defaultSubId = if (subs.size >= 2) {
+            runCatching { SubscriptionManager.getDefaultSubscriptionId() }
+                .getOrDefault(SubscriptionManager.INVALID_SUBSCRIPTION_ID)
+        } else {
+            SubscriptionManager.INVALID_SUBSCRIPTION_ID
+        }
         return subs.map { info ->
             val subId = info.subscriptionId
             val tm = tmFor(ctx, subId)
@@ -76,6 +85,7 @@ object CarrierConfigController {
                 realCountryIso = realIso,
                 realCarrierName = realCarrier,
                 overridden = overridden,
+                isDefaultSub = subId == defaultSubId,
             )
         }
     }

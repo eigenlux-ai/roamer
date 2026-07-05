@@ -6,6 +6,7 @@
     <string name="cd_refresh_all">刷新全部信息</string>
     <string name="section_quick_switch">快速切换</string>
     <string name="section_sim_details">SIM 详情</string>
+    <string name="section_region_override">区域覆盖</string>
     <string name="section_appearance">外观</string>
     <string name="section_log">日志</string>
     <string name="section_override_to">覆写为</string>
@@ -40,6 +41,7 @@
     <string name="field_carrier">运营商名</string>
     <string name="badge_overridden">已覆写</string>
     <string name="cd_overridden">已覆盖</string>
+    <string name="badge_default_sub">主卡槽</string>
     <string name="action_restore">还原</string>
     <string name="action_override">覆写</string>
     <string name="action_override_to">覆写→%1$s</string>
@@ -94,4 +96,18 @@
     <string name="country_ae">阿联酋</string>
     <string name="country_au">澳大利亚</string>
     <string name="country_nz">新西兰</string>
+
+    <!-- ===== 区域覆盖(二期)===== -->
+    <string name="region_follow_primary">跟随主卡槽覆盖应用区域</string>
+    <string name="region_follow_hint">在 Roamer 执行 SIM 操作或刷新时重新应用,非后台服务。</string>
+    <string name="region_selected_apps">生效应用</string>
+    <string name="region_selected_count">已选 %1$d 个</string>
+    <string name="region_honesty">很多应用的地区来自 IP / GPS / 账号而非 locale——是否生效取决于该应用读哪个源。</string>
+    <!-- 应用选择器子页 -->
+    <string name="app_picker_title">选择应用</string>
+    <string name="app_picker_search">搜索应用</string>
+    <string name="app_picker_show_system">系统应用</string>
+    <string name="app_picker_loading">正在加载应用…</string>
+    <string name="app_picker_empty">无匹配应用</string>
+    <string name="cd_back">返回</string>
 </resources>

@@ -7,6 +7,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.util.Locale
 
 /** Consistency unit tests for country/carrier presets (pure static data) — the linked dropdown's correctness relies on these invariants. */
 class PresetsTest {
@@ -36,6 +37,22 @@ class PresetsTest {
         // Distinct name resources per country (no accidental copy-paste reuse across isos).
         val nameResIds = CountryPresets.all.map { it.nameRes }
         assertEquals("duplicate nameRes found", nameResIds.size, nameResIds.toSet().size)
+    }
+
+    @Test
+    fun `every preset has a valid default locale whose region matches iso`() {
+        // Phase-2 region override writes this BCP-47 tag to a selected app's per-app locale.
+        // Assert each is non-blank, parses to a locale with a language, and its region == iso.
+        CountryPresets.all.forEach { preset ->
+            assertFalse("${preset.iso} defaultLocale is blank", preset.defaultLocale.isBlank())
+            val loc = Locale.forLanguageTag(preset.defaultLocale)
+            assertTrue("${preset.iso} defaultLocale must carry a language", loc.language.isNotBlank())
+            assertEquals(
+                "${preset.iso} defaultLocale region must equal iso",
+                preset.iso.uppercase(),
+                loc.country,
+            )
+        }
     }
 
     @Test
