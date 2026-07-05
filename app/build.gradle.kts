@@ -65,6 +65,8 @@ dependencies {
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
+    // Provides the current androidx.lifecycle.compose.LocalLifecycleOwner (the compose-ui one is deprecated)
+    implementation(libs.androidx.lifecycle.runtime.compose)
 
     // Shizuku: borrow shell privileges to call hidden telephony APIs
     implementation(libs.shizuku.api)

@@ -10,7 +10,7 @@ import org.lsposed.hiddenapibypass.HiddenApiBypass
 import rikka.shizuku.ShizukuBinderWrapper
 
 /**
- * Phase-2 per-app region override: write/read a target app's per-app locale through the Shizuku binder
+ * Per-app region override: write/read a target app's per-app locale through the Shizuku binder
  * (shell identity holds CHANGE_CONFIGURATION), and keep the enrolled apps in sync with the primary
  * slot's override state.
  *
@@ -37,7 +37,7 @@ object LocaleOverrideController {
             .invoke(null, Context.LOCALE_SERVICE) as IBinder
         return Class.forName("android.app.ILocaleManager\$Stub")
             .getMethod("asInterface", IBinder::class.java)
-            .invoke(null, ShizukuBinderWrapper(binder))
+            .invoke(null, ShizukuBinderWrapper(binder))!!   // asInterface never returns null for a live binder
     }
 
     /** userId from the app's own uid (PER_USER_RANGE = 100000); scoped to the current user. */
