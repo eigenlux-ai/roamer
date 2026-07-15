@@ -129,7 +129,12 @@ object LocaleOverrideController {
 
     /** Unenroll [pkg]: restore its captured baseline, then drop the enrollment and baseline. */
     fun unenroll(ctx: Context, pkg: String) = synchronized(lock) {
-        applyAppLocale(pkg, AppLocaleStore.baselineOf(ctx, pkg) ?: "")
+        // Only drop the state once the restore actually landed. If the write fails (Shizuku died while the
+        // picker was open, or the binder call threw), clearing the baseline would strand the override for
+        // good: the app is no longer enrolled, so sync() never revisits it, and the value to restore is
+        // gone. Keeping both lets the next sync() / unenroll finish the job — mirrors enroll's guard, and
+        // matches master-off, which stays recoverable precisely because it preserves the baseline.
+        if (!applyAppLocale(pkg, AppLocaleStore.baselineOf(ctx, pkg) ?: "")) return
         AppLocaleStore.setEnrolled(ctx, pkg, false)
         AppLocaleStore.clearBaseline(ctx, pkg)
     }
