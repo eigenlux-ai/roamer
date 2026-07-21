@@ -3,15 +3,10 @@ package com.eigenlux.roamer.ui.theme
 import androidx.compose.ui.graphics.Color
 
 /**
- * Roamer color palette.
- *
- * Brand imagery: "Harbor at dusk · Departure". The primary is Harbor blue (hue ~220–230, evoking
- * roaming / global / journey); the accent is brass amber (the warmth of a boarding pass), used for
- * attention-grabbing states like "overridden / active".
- * Strategy: restrained — neutral surfaces + a single dominant brand color, amber accent ≤10%.
+ * Color token definitions for Light and Dark Material 3 color schemes.
  */
 
-// ── Brand primary · Harbor blue (Harbor) ─────────────────────────────
+// Primary (Harbor Blue)
 val HarborPrimaryLight = Color(0xFF0E6BA8)
 val HarborOnPrimaryLight = Color(0xFFFFFFFF)
 val HarborContainerLight = Color(0xFFCDE5F6)
@@ -22,7 +17,7 @@ val HarborOnPrimaryDark = Color(0xFF04283F)
 val HarborContainerDark = Color(0xFF0C4C76)
 val HarborOnContainerDark = Color(0xFFCDE5F6)
 
-// ── Accent · brass amber (Brass) —— "overridden / active" highlight ─────────
+// Accent / Tertiary (Brass Amber)
 val BrassLight = Color(0xFF9A6800)
 val BrassOnLight = Color(0xFFFFFFFF)
 val BrassContainerLight = Color(0xFFF6E0B4)
@@ -33,7 +28,7 @@ val BrassOnDark = Color(0xFF3A2A00)
 val BrassContainerDark = Color(0xFF6A4E12)
 val BrassOnContainerDark = Color(0xFFF6E0B4)
 
-// ── Secondary · slate blue (Slate) ────────────────────────────────
+// Secondary (Slate Blue)
 val SlateLight = Color(0xFF4C6274)
 val SlateOnLight = Color(0xFFFFFFFF)
 val SlateContainerLight = Color(0xFFD3E1EE)
@@ -44,7 +39,7 @@ val SlateOnDark = Color(0xFF1E3240)
 val SlateContainerDark = Color(0xFF344B5A)
 val SlateOnContainerDark = Color(0xFFD3E1EE)
 
-// ── Neutral surfaces · light (cool-leaning tweak) ───────────────────────────────
+// Neutral Surfaces (Light)
 val BgLight = Color(0xFFF5F8FA)
 val OnBgLight = Color(0xFF111A22)
 val SurfaceLight = Color(0xFFFFFFFF)
@@ -54,7 +49,7 @@ val OnSurfaceVariantLight = Color(0xFF45525C)
 val OutlineLight = Color(0xFF74808B)
 val OutlineVariantLight = Color(0xFFC5D0D9)
 
-// ── Neutral surfaces · dark (harbor at dusk) ───────────────────────────────
+// Neutral Surfaces (Dark)
 val BgDark = Color(0xFF0C1117)
 val OnBgDark = Color(0xFFE1E7ED)
 val SurfaceDark = Color(0xFF121A21)
@@ -64,7 +59,7 @@ val OnSurfaceVariantDark = Color(0xFFBEC9D2)
 val OutlineDark = Color(0xFF89939D)
 val OutlineVariantDark = Color(0xFF3F4A54)
 
-// ── Semantic · error ────────────────────────────────────────────
+// Error State
 val ErrorLight = Color(0xFFBA1A1A)
 val OnErrorLight = Color(0xFFFFFFFF)
 val ErrorContainerLight = Color(0xFFFFDAD6)
@@ -75,7 +70,6 @@ val OnErrorDark = Color(0xFF690005)
 val ErrorContainerDark = Color(0xFF93000A)
 val OnErrorContainerDark = Color(0xFFFFDAD6)
 
-// ── Semantic extension (outside the Material scheme, referenced directly by status labels) ────
-// Success/active: harbor green; roaming/overridden: use Brass (see tertiary).
+// Success State
 val SuccessLight = Color(0xFF2E7D57)
 val SuccessDark = Color(0xFF6FD3A3)

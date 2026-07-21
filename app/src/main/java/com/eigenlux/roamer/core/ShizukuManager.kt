@@ -4,8 +4,7 @@ import android.content.pm.PackageManager
 import rikka.shizuku.Shizuku
 
 /**
- * Shizuku availability and authorization checks. The prerequisite for root-free override: borrowing
- * the shell (ADB) identity through Shizuku.
+ * Checks Shizuku service status and handles permission requests.
  */
 object ShizukuManager {
 
@@ -18,7 +17,6 @@ object ShizukuManager {
         isBinderAlive() && Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED
     }.getOrDefault(false)
 
-    /** @return true if the binder exists (request in progress or already granted); false if Shizuku is not running */
     fun requestPermission(): Boolean = runCatching {
         if (!isBinderAlive()) return false
         if (Shizuku.checkSelfPermission() != PackageManager.PERMISSION_GRANTED) {

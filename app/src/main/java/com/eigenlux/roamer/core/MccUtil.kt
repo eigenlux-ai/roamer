@@ -4,31 +4,19 @@ import android.util.Log
 import org.lsposed.hiddenapibypass.HiddenApiBypass
 
 /**
- * The **single source of truth** for deriving the ISO country code from the MCC.
- *
- * `getSimOperator` (MCC/MNC) is SELinux-protected and cannot be overridden by CarrierConfig, so the
- * country code derived from a static MCC lookup is the "tamper-proof true home country" — still
- * re-retrievable at runtime while an override is in effect. This is the cornerstone of "restore needs
- * no saved baseline": the real ISO can be re-derived at runtime from the MCC at any moment.
- *
- * The App process (enumerating SIMs / determining whether overridden) and the privileged
- * instrumentation (restore write-back) share this object, avoiding two divergent copies of the MCC
- * lookup logic.
+ * Resolves ISO country codes from Mobile Country Codes (MCC).
+ * Uses AOSP `MccTable` reflection with a static fallback map.
  */
 object MccUtil {
     private const val TAG = "RoamerMcc"
 
     init {
-        // Reflecting com.android.internal.telephony.MccTable (@hide) requires a hidden-API exemption (process-level, once suffices)
         runCatching { HiddenApiBypass.addHiddenApiExemptions("L") }
     }
 
     /**
-     * Derive a lowercase ISO from mccMnc (taking the first 3 digits as the MCC), e.g. `"46001"→"cn"`.
-     * Returns `""` when there is no valid MCC.
-     * Prefer AOSP `MccTable` reflection (authoritative, full table); when reflection fails, fall back to
-     * the built-in [isoFromMccTable] table, avoiding degradation to `""` on some ROMs → which would
-     * trigger the false-restore chain of the restore criterion "cannot get the true value counts as success".
+     * Resolves ISO country code from MCCMNC string.
+     * Tries reflection first, falling back to static map if reflection fails.
      */
     fun countryFromMcc(mccMnc: String): String {
         val mccStr = mccMnc.take(3)
@@ -44,9 +32,7 @@ object MccUtil {
     }
 
     /**
-     * Reflect `MccTable.countryCodeForMcc`. The signature varies between int / String across Android
-     * versions, so enumerate same-named methods and match by parameter type to avoid guessing the wrong
-     * overload. On a hit, return the lowercase ISO; class missing / no match / call failure all return null.
+     * Reflects `com.android.internal.telephony.MccTable.countryCodeForMcc`.
      */
     private fun reflectCountryCode(mccStr: String): String? {
         val mccInt = mccStr.toInt()
@@ -71,11 +57,7 @@ object MccUtil {
     }
 
     /**
-     * Pure static MCC→ISO fallback lookup (**no reflection, no Log, JVM-unit-testable**). Takes the
-     * first 3 digits as the MCC; returns `""` when not listed. Covers all countries in
-     * [com.eigenlux.roamer.data.CountryPresets] + common MCC variants. Data taken from the ITU MCC
-     * allocation (public). Not an authoritative full table — the authoritative path is still `MccTable`
-     * reflection; this only serves as a safety net when reflection fails, and is not used as a validation criterion.
+     * Static MCC-to-ISO fallback lookup table for unit testing and offline fallback.
      */
     fun isoFromMccTable(mccMnc: String): String = FALLBACK[mccMnc.take(3)].orEmpty()
 

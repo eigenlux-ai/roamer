@@ -5,8 +5,7 @@ import androidx.compose.material3.Shapes
 import androidx.compose.ui.unit.dp
 
 /**
- * Corner-radius scale (DESIGN.md §4): cards 16dp, buttons 12dp, chips 8dp — restrained medium rounding,
- * no pill-shaped cartoonish look. Components still pass `shape=` explicitly (see MainActivity); this only backfills the Material3 default slots.
+ * Shape definitions for rounded corners across UI elements.
  */
 val RoamerShapes = Shapes(
     extraSmall = RoundedCornerShape(8.dp),
@@ -16,7 +15,9 @@ val RoamerShapes = Shapes(
     extraLarge = RoundedCornerShape(16.dp),
 )
 
-/** Spacing scale (DESIGN.md §4): 4 · 8 · 12 · 16 · 24 · 32. */
+/**
+ * Standard spacing grid tokens.
+ */
 object Spacing {
     val xs = 4.dp
     val sm = 8.dp

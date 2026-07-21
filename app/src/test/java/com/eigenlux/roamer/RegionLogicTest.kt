@@ -7,7 +7,9 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
 
-/** Pure-logic tests for the phase-2 region-override decisions (no Android/Shizuku involved). */
+/**
+ * Unit tests for region override decision logic.
+ */
 class RegionLogicTest {
 
     private fun sim(country: String, overridden: Boolean, isDefault: Boolean, slot: Int = 1, subId: Int = slot) =
@@ -29,15 +31,11 @@ class RegionLogicTest {
     fun `desiredTag applies country locale only while primary overridden and master on`() {
         val overriddenJp = PrimaryState(country = "jp", overridden = true)
         assertEquals("ja-JP", RegionLogic.desiredTag(masterOn = true, primary = overriddenJp, baseline = ""))
-        // master off -> baseline
         assertEquals("fr-FR", RegionLogic.desiredTag(masterOn = false, primary = overriddenJp, baseline = "fr-FR"))
-        // primary not overridden -> baseline
         val realJp = PrimaryState(country = "jp", overridden = false)
         assertEquals("", RegionLogic.desiredTag(masterOn = true, primary = realJp, baseline = ""))
-        // country null -> baseline
         val none = PrimaryState(country = null, overridden = true)
         assertEquals("en-GB", RegionLogic.desiredTag(masterOn = true, primary = none, baseline = "en-GB"))
-        // unknown iso not derivable -> baseline
         val unknown = PrimaryState(country = "zz", overridden = true)
         assertEquals("de-DE", RegionLogic.desiredTag(masterOn = true, primary = unknown, baseline = "de-DE"))
     }

@@ -6,18 +6,16 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 /**
- * JVM unit tests for MccUtil's built-in fallback table (pure static, no reflection / no android.util.Log).
- * The fallback table is the source of truth "when MccTable reflection fails on some ROM" → it must cover
- * every preset country, otherwise restore for that country degrades.
+ * JVM unit tests for MccUtil's static fallback table.
  */
 class MccUtilTest {
 
     @Test
     fun `known mcc maps to iso`() {
-        assertEquals("cn", MccUtil.isoFromMccTable("46001")) // takes first 3 digits
+        assertEquals("cn", MccUtil.isoFromMccTable("46001"))
         assertEquals("cn", MccUtil.isoFromMccTable("460"))
         assertEquals("us", MccUtil.isoFromMccTable("310260"))
-        assertEquals("us", MccUtil.isoFromMccTable("311")) // common variant
+        assertEquals("us", MccUtil.isoFromMccTable("311"))
         assertEquals("hk", MccUtil.isoFromMccTable("454"))
         assertEquals("jp", MccUtil.isoFromMccTable("44010"))
     }

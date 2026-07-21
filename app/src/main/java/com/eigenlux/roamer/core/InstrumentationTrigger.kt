@@ -10,19 +10,8 @@ import rikka.shizuku.ShizukuBinderWrapper
 import java.lang.reflect.InvocationTargetException
 
 /**
- * Launch [PrivilegedOverrideInstrumentation] by invoking the `IActivityManager.startInstrumentation`
- * API directly via Shizuku (rather than the `am instrument` command), **crucially with
- * `INSTR_FLAG_NO_RESTART`**: the system skips the force-stop of the target package and the
- * instrumentation attaches to the already-running App process → **the UI is not killed, no crash**.
- *
- * Why not `am instrument`: that command does not carry NO_RESTART and must force-stop the target
- * package before starting, so self-triggering kills itself.
- * Why not invoke overrideConfig directly via ShizukuBinderWrapper: Samsung specifically rejects
- * `getCallingUid()==SHELL` (every Shizuku call runs under shell identity). So the privileged call
- * must happen under the **App's own uid** — see the note on `startDelegateShellPermissionIdentity`
- * in [PrivilegedOverrideInstrumentation].
- *
- * Reference: public AOSP/Shizuku-based implementations.
+ * Triggers [PrivilegedOverrideInstrumentation] using `IActivityManager.startInstrumentation`
+ * via Shizuku with `INSTR_FLAG_NO_RESTART` to attach to the active process without restarting the UI.
  */
 object InstrumentationTrigger {
 
@@ -32,10 +21,7 @@ object InstrumentationTrigger {
     }
 
     /**
-     * Trigger one privileged instrumentation (fire-and-forget; success/failure is confirmed by the
-     * caller polling the actual override state).
-     * @param extras String arguments passed to the instrumentation (same keys as `am instrument -e`, shared by both entry points).
-     * @throws Throwable thrown when the instrumentation cannot be launched (Shizuku unreachable / reflection failure).
+     * Launches instrumentation with the specified extras bundle.
      */
     fun trigger(context: Context, extras: Map<String, String>) {
         val args = Bundle().apply { extras.forEach { (k, v) -> putString(k, v) } }

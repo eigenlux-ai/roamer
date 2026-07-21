@@ -1,116 +1,107 @@
 # Roamer
 
-无 root 的 Android 工具,用于覆写 SIM 卡的**归属地(国家/地区)与运营商名**,并可选地把该归属地**镜像到选定应用的 per-app locale**,让开发者在自己的设备上模拟不同国家 / 运营商环境做调试。
+Roamer 是一款无需 root 的 Android 开发者工具，用于修改 SIM 卡汇报的国家代码（ISO）与运营商名称，并支持将伪装的归属地同步到特定应用的语言/区域设置（Per-app locale），方便开发者在单台设备上调试多国及多运营商逻辑。
 
 [English](README.md) · **简体中文**
 
-`Kotlin` · `Jetpack Compose` · `Material 3` · `Shizuku` · minSdk 31(Android 12+)
+技术栈：Kotlin · Jetpack Compose · Material 3 · Shizuku · minSdk 31 (Android 12+)
 
-## 它能做什么
+## 项目简介
 
-Roamer 修改系统通过 telephony API 暴露的 CarrierConfig **覆盖层**,让应用把你的 SIM 读成属于另一个国家或运营商。它经 [Shizuku](https://shizuku.rikka.app/) 借用 shell 特权,**无需 root**。
+Roamer 通过 [Shizuku](https://shizuku.rikka.app/) 调用系统 Telephony API 暴露的 CarrierConfig 覆盖层，使应用读取到指定的 SIM 卡归属地和运营商名称，无需更换实体 SIM 卡。
 
-典型用途:验证自己的应用面向美国 / 日本 / 中国香港 / 韩国用户、或特定运营商时的表现,而不必更换实体 SIM。
+同时，Roamer 支持按应用设置区域覆盖（Android 13+）：选中的应用将跟随主 SIM 卡当前伪装的国家代码（例如伪装为日本时应用自动使用 `ja-JP` 区域设置）。当 SIM 还原或功能关闭时，应用会自动恢复至初始的区域设置。
 
-它还提供可选的**按应用区域覆盖**:勾选一组应用,它们的 per-app locale 会跟随主卡槽的伪装归属地(例如把 SIM 伪装成日本,选中的应用就读成/显示成 `ja-JP`)。默认关闭,SIM 还原时各应用自动回退到原本的 locale。
+## 主要功能
 
-## 功能
+- 无需 Root：通过 Shizuku 覆盖 SIM 卡国家 ISO 及运营商名称。
+- 多卡支持：支持多 SIM 卡独立配置或一键批量应用/还原。
+- 内置预设：提供常用国家与地区（美国、日本、韩国、中国大陆、中国香港等）及主流运营商配置。
+- 无快照还原：在运行时根据 MCC 实时重导真实值并回写，无需保存历史快照。
+- 应用级区域同步：可选择特定应用跟随 SIM 伪装区域。
+- 调试友好：原值与当前值对比展示，技术参数（MCC/MNC/ISO/subId）采用等宽字体显示，支持浅色/深色主题。
 
-- 无 root 覆写 SIM 的国家 ISO 与运营商名(经 Shizuku)。
-- 双卡:一次操作批量覆写或还原所有卡槽。
-- 一键伪装为 US / JP / KR / CN / HK,使用各地区市场份额领先的运营商;生效的按钮保持高亮。
-- 一键还原,可单卡或全部;真值在运行时重导,不保存任何快照。
-- 可选的按应用区域覆盖:选中的应用经 per-app locale 跟随主卡槽的伪装归属地,SIM 还原时自动回退(默认关闭)。
-- 原始值与当前值并排展示;技术码值(MCC/MNC/ISO/subId)用等宽样式。
-- 已覆盖的卡片带倾斜、半透明的面具印章标识。
-- 亮 / 暗主题,可独立于系统切换;Material 3,对比度达 WCAG AA。
-- 中英文,跟随系统语言,Android 13+ 可按应用单独切换。
-- 品牌化启动屏;色盲友好的日志(图标 + 文字)。
+## 覆盖能力与边界
 
-## 能改与不能改
+Roamer 仅修改 CarrierConfig 的覆盖层，不修改底层 SIM 卡或 RIL 硬件信息。
 
-Roamer 只编辑 CarrierConfig 覆盖层,**不**触碰 SIM 或 RIL 的真实值。
-
-| 值 | 可覆写 | API |
+| 目标属性 | 是否可覆写 | Telephony API |
 | --- | --- | --- |
-| 国家 ISO | ✅ 能 | `getSimCountryIso` |
-| 运营商名 | ✅ 能 | `getSimOperatorName` |
-| MCC / MNC 数字 | ❌ 不能 | `getSimOperator`(SELinux 保护) |
-| 在网真值 | ❌ 不能 | `getNetworkOperator` / `getNetworkCountryIso` |
+| 国家代码 (Country ISO) | 是 | `getSimCountryIso` |
+| 运营商名称 (Carrier Name) | 是 | `getSimOperatorName` |
+| MCC / MNC 数字 | 否 | `getSimOperator` (SELinux 保护) |
+| 在网注册信息 | 否 | `getNetworkOperator` / `getNetworkCountryIso` |
 
-因此 Roamer 把 MNC 标为只读,并**绝不承诺**改变真实号码、收发短信、或骗过所有应用。能否骗过某个应用,取决于它读的是哪个 API。
-
-按应用区域覆盖是**另一套机制**(系统的 per-app locale),不属于上面这层 CarrierConfig。它改变的是目标应用经 `Locale`/`Configuration` 读到的东西(国家、格式化、语言)。很多应用的地区来自 IP / GPS / 账号——和 SIM 覆盖一样,是否生效取决于该应用读哪个源。
+由于 MNC 和网络注册信息无法覆盖，Roamer 不会修改真实手机号码或基站连接信息。应用能否被正确伪装取决于其内部读取的是哪个 Telephony API 或位置服务。
 
 ## 环境要求
 
-- 一台 Android 设备(已在一台运行 Android 16 的三星设备上验证),Android 12+(minSdk 31)。
-- 已安装并运行 [Shizuku](https://shizuku.rikka.app/)(通过无线调试或 ADB 启动)。
-- 首次启动授予 `READ_PHONE_STATE`(仅用于枚举活跃 SIM;应用未声明 `CALL_PHONE`,无法拨打电话)。
-- 按应用区域覆盖需要 Android 13+(系统 per-app locale API)。它声明 `QUERY_ALL_PACKAGES` 仅用于在选择器里列出已装应用;locale 本身经 Shizuku 写入。
-- 系统内「按应用单独调整语言」需要 Android 13+。
+- Android 12+ (minSdk 31)，已在 Android 16 (Samsung) 上测试。
+- 已安装并启动 [Shizuku](https://shizuku.rikka.app/)（支持无线调试或 ADB 启动）。
+- 首次启动需授予 `READ_PHONE_STATE` 权限以读取卡槽信息。
+- 应用级区域同步功能需要 Android 13+ 系统支持。
 
-## 工作原理
+## 技术实现
 
-**提权路径。** 直接经 Shizuku 调 `overrideConfig` 在部分厂商上会失败:三星专门拒绝 `getCallingUid() == SHELL`,而每次 Shizuku 调用都跑在 shell 身份下。Roamer 改为经 Shizuku 调 `IActivityManager.startInstrumentation` 并带上 `INSTR_FLAG_NO_RESTART`(不 force-stop 目标包、UI 不闪退)。instrumentation 在应用进程内运行,调用 `startDelegateShellPermissionIdentity(myUid, null)` 把 shell 的权限委派给应用自身 uid。随后特权 `overrideConfig` 以应用 uid 身份运行(过「拒 shell」护栏),同时携带 `MODIFY_PHONE_STATE`(过权限校验)。
+### 提权机制
 
-**无 baseline 还原。** Roamer 不保存任何覆盖前快照,还原时全部现场重导真值:
+在部分 OEM 设备（如三星）上，直接通过 Shizuku 调用 `overrideConfig` 会因 `getCallingUid() == SHELL` 校验而被拒绝。
 
-- 真实国家 ISO 由不可变的 MCC(`getSimOperator`,任何覆盖都污染不了)派生。还原是两步写:先回写真实 ISO(非空值强制订阅库更新),再用 `overrideConfig(null)` 清掉覆盖层。在本机型上,单纯盲清并不会把 ISO 还回去。
-- 运营商名无需回写:清层会触发 pull-on-read,自动回退到生产值。
-- 「是否已覆盖」现场判定:MCC 派生的真实 ISO 与当前生效的 `getSimCountryIso` 不一致即为已覆盖。
+Roamer 的解决路径：
+1. 通过 Shizuku 调用 `IActivityManager.startInstrumentation`（附加 `INSTR_FLAG_NO_RESTART` 标志，避免应用进程重启）。
+2. Instrumentation 在应用进程内运行并执行 `startDelegateShellPermissionIdentity(myUid, null)`。
+3. 将 Shell 权限委派给应用自身的 UID，随后带 `MODIFY_PHONE_STATE` 权限以应用身份执行 `overrideConfig`。
 
-**按应用区域覆盖。** 勾选的应用镜像主卡槽的**覆盖状态**:SIM 处于伪装态时,每个选中应用的 per-app locale 被设为该国默认值(如 `ja-JP`);SIM 还原(或功能关闭)时,每个应用被精确还原到它此前的 locale。Roamer 经 Shizuku 的 `ILocaleManager` 以 shell 身份写入(无需 instrumentation)。它不跑后台服务,所以同步发生在 Roamer 执行 SIM 操作或刷新时——不是常驻后台。
+### 无快照还原
 
-所有反射经 [HiddenApiBypass](https://github.com/LSPosed/AndroidHiddenApiBypass);项目不依赖任何隐藏 API 编译桩即可构建。
+Roamer 不依赖本地保存的初始状态快照。在执行还原时：
+- 真实国家 ISO 通过不可变 MCC (`getSimOperator`) 重新派生。还原过程先回写真实 ISO 以更新订阅数据库，随后执行 `overrideConfig(null)` 清理覆盖层。
+- 运营商名称在覆盖层被清理后，系统再次读取时会自动恢复为原厂配置。
 
-## 构建
+### 反射与隐藏 API
+
+隐藏 API 的调用全部基于 [HiddenApiBypass](https://github.com/LSPosed/AndroidHiddenApiBypass) 实现，编译期无需依赖隐藏 Stub。
+
+## 构建说明
 
 ```bash
 export JAVA_HOME=/path/to/jdk-21
-./gradlew :app:assembleDebug        # 构建 debug APK
-./gradlew :app:testDebugUnitTest    # 运行 JVM 单测
+./gradlew :app:assembleDebug        # 构建 Debug APK
+./gradlew :app:testDebugUnitTest    # 执行 JVM 单元测试
 ```
 
 ## 项目结构
 
 ```
 com.eigenlux.roamer/
-├── core/   # 唯一碰隐藏 API / 特权的地方
-│   ├── ShizukuManager · SimInfo · MccUtil(MCC→ISO 真源)
-│   ├── CarrierConfigController            # 枚举 + 触发 + 轮询确认;N/M 批量结果
-│   ├── InstrumentationTrigger            # Shizuku → startInstrumentation + NO_RESTART
-│   ├── PrivilegedOverrideInstrumentation # shell 委派 + 无 baseline 两步还原
-│   ├── PrivilegedSubscriptionReader      # binder 直读 ISub(只读 ICCID 展示)
-│   ├── RegionLogic                       # 按应用区域覆盖的纯决策逻辑(可 JVM 单测)
-│   └── LocaleOverrideController          # 经 Shizuku ILocaleManager 读/写/清 per-app locale
-├── data/   # 纯静态预设 + 本地状态(CountryPresets 27 地区 / CarrierPresets 按 ISO 联动 / AppLocaleStore)
-├── AppPickerScreen.kt                    # 区域覆盖的全屏应用选择器
-└── ui/     # Compose(Material 3 主题,单屏 MainActivity)
+├── core/   # Telephony API、Shizuku 绑定与 Instrumentation 提权逻辑
+│   ├── ShizukuManager
+│   ├── CarrierConfigController
+│   ├── InstrumentationTrigger
+│   ├── PrivilegedOverrideInstrumentation
+│   ├── PrivilegedSubscriptionReader
+│   ├── RegionLogic
+│   └── LocaleOverrideController
+├── data/   # 预设数据与本地状态存储
+├── ui/     # Compose 界面、Material 3 主题与 MainActivity
+└── AppPickerScreen.kt
 ```
 
 ## 国际化
 
-UI 文案位于 `res/values`(英文,默认)与 `res/values-zh`(中文)。任何非中文系统语言都回落英文。`res/xml/locales_config.xml` 在 Android 13+ 上启用「按应用调整语言」选择器。JVM 测试(`StringsParityTest`)强制两套字符串表保持同步。
-
-## 安全
-
-Roamer 是面向自己设备的调试工具,用完能让设备回到干净状态:由于还原会在运行时重导每一个值,测试后总能把 SIM 还回它真实的国家与运营商。
+界面文案维护在 `res/values`（默认英文）与 `res/values-zh`（中文）。JVM 单元测试 (`StringsParityTest`) 会自动检查两套文案 Key 的一致性。
 
 ## 已知限制
 
-- 仅在一台运行 Android 16 的三星设备上验证。其他厂商与 Android 版本为 best-effort:提权路径针对三星的 reject-shell 行为。
-- 若操作中途 SIM 失去服务(拔卡或飞行模式),还原可能报告成功,但设备实际仍残留覆盖。
+- 提权路径主要针对三星设备上 Shell UID 的限制逻辑进行适配，其他厂商设备为 Best-effort 支持。
+- 若在操作过程中 SIM 卡断开连接（如飞行模式），底层 Telephony 状态更新可能会有延迟。
 
-## 许可证
+## 开源协议
 
-以 [MIT License](LICENSE) 发布。
+基于 [MIT License](LICENSE) 开源。
 
 ## 致谢
 
-Roamer 受两个项目启发,它们率先探索了无 root、基于 Shizuku 的运营商 / 地区伪装方案:
-
-- [**Ackites/Nrfr**](https://github.com/Ackites/Nrfr)
-- [**lmh-codes/Nrfr**](https://github.com/lmh-codes/Nrfr)
-
-Roamer 的重心在界面:为一件以往多以简陋工具形态出现的事,做一套精致而诚实的 UI/UX。技术层面它也贡献了两步 ISO 回写还原(早期 fork 的盲 `overrideConfig(null)` 在本机型上还不回 ISO)以及完全无 baseline、运行时重导的还原模型。感谢这两个项目奠定的基础。
+参考了以下开源项目在无 Root 下通过 Shizuku 覆盖 CarrierConfig 的探索：
+- [Ackites/Nrfr](https://github.com/Ackites/Nrfr)
+- [lmh-codes/Nrfr](https://github.com/lmh-codes/Nrfr)

@@ -7,15 +7,7 @@ import org.lsposed.hiddenapibypass.HiddenApiBypass
 import rikka.shizuku.ShizukuBinderWrapper
 
 /**
- * Read `ISub` directly via the Shizuku binder (the caller within the binder transaction is shell),
- * bypassing the redaction of identifiers such as ICCID for non-privileged Apps —
- * `SubscriptionManagerService#conditionallyRemoveIdentifiers` requires the caller to hold
- * `USE_ICC_AUTH_WITH_DEVICE_IDENTIFIER`, otherwise it forces `setIccId(null)` (see AOSP source). A
- * regular App cannot obtain this permission; the shell identity can. Read-only, changes no state, and
- * does not involve the reject-shell write guard of `overrideConfig`.
- *
- * The signature is taken from the AOSP `SubscriptionManagerService.getActiveSubscriptionInfoList(String, String, boolean)`
- * source (not a guessed reflection signature).
+ * Reads subscription ICCIDs directly via Shizuku binder IPC to bypass App-side identifier redaction.
  */
 object PrivilegedSubscriptionReader {
 
@@ -25,7 +17,9 @@ object PrivilegedSubscriptionReader {
         HiddenApiBypass.addHiddenApiExemptions("L")
     }
 
-    /** subId -> ICCID. Read failure / not authorized / no permission all gracefully degrade to an empty map, and the caller falls back to the App's own read. */
+    /**
+     * Reads active SIM ICCIDs using shell identity. Returns a map of subId to ICCID.
+     */
     fun readIccIds(): Map<Int, String> {
         if (!ShizukuManager.hasPermission()) return emptyMap()
         return runCatching {

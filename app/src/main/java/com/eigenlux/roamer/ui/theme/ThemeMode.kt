@@ -4,10 +4,10 @@ import android.content.Context
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
 
-/** Theme mode: follow system / force light / force dark. */
+/** Theme mode preference option. */
 enum class ThemeMode { SYSTEM, LIGHT, DARK }
 
-/** Resolve to whether dark (for SYSTEM, reads the system setting). @Composable: reads the system dark state. */
+/** Resolves active dark mode status for the selected [ThemeMode]. */
 @Composable
 fun ThemeMode.resolveDark(): Boolean = when (this) {
     ThemeMode.SYSTEM -> isSystemInDarkTheme()
@@ -15,7 +15,7 @@ fun ThemeMode.resolveDark(): Boolean = when (this) {
     ThemeMode.DARK -> true
 }
 
-/** Persist theme preference (SharedPreferences; apply is fine in a foreground process). */
+/** Storage helper for persisting the selected theme mode preference. */
 object ThemeModeStore {
     private const val PREFS = "roamer_prefs"
     private const val KEY = "theme_mode"

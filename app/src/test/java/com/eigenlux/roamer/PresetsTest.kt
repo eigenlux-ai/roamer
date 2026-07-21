@@ -9,7 +9,9 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.util.Locale
 
-/** Consistency unit tests for country/carrier presets (pure static data) — the linked dropdown's correctness relies on these invariants. */
+/**
+ * Unit tests verifying consistency of country and carrier preset data.
+ */
 class PresetsTest {
 
     @Test
@@ -28,21 +30,16 @@ class PresetsTest {
 
     @Test
     fun `every preset carries a resolvable name resource and numeric mcc`() {
-        // Display names live in string resources (localized); data-side we only assert each preset
-        // points at a real (non-zero) @StringRes and a numeric MCC. Label text is verified on the UI side.
         CountryPresets.all.forEach { preset ->
             assertTrue("${preset.iso} nameRes must be non-zero", preset.nameRes != 0)
             assertTrue("${preset.iso} mcc must be numeric", preset.mcc.toIntOrNull() != null)
         }
-        // Distinct name resources per country (no accidental copy-paste reuse across isos).
         val nameResIds = CountryPresets.all.map { it.nameRes }
         assertEquals("duplicate nameRes found", nameResIds.size, nameResIds.toSet().size)
     }
 
     @Test
     fun `every preset has a valid default locale whose region matches iso`() {
-        // Phase-2 region override writes this BCP-47 tag to a selected app's per-app locale.
-        // Assert each is non-blank, parses to a locale with a language, and its region == iso.
         CountryPresets.all.forEach { preset ->
             assertFalse("${preset.iso} defaultLocale is blank", preset.defaultLocale.isBlank())
             val loc = Locale.forLanguageTag(preset.defaultLocale)

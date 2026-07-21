@@ -7,10 +7,7 @@ import java.io.File
 import javax.xml.parsers.DocumentBuilderFactory
 
 /**
- * Executable guard for the i18n contract: the default (English) and Chinese string tables must stay
- * in sync. Android's MissingTranslation lint only fails the release build (lintVital), so a plain JVM
- * test makes "both strings.xml carry the same keys, with matching format placeholders" a fast, always-on
- * constraint — adding a string to one file and forgetting the other turns red here instead of at release.
+ * Unit test verifying key and placeholder parity between English and Chinese string tables.
  */
 class StringsParityTest {
 
@@ -18,7 +15,6 @@ class StringsParityTest {
         listOf(File(rel), File("app/$rel")).firstOrNull { it.exists() }
             ?: error("resource not found from ${File("").absolutePath}: $rel")
 
-    /** Parse `<string name="x">…</string>` entries into name -> raw text. */
     private fun parseStrings(rel: String): Map<String, String> {
         val doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(resFile(rel))
         val nodes = doc.getElementsByTagName("string")
@@ -31,7 +27,6 @@ class StringsParityTest {
         }
     }
 
-    /** Positional format specifiers, e.g. `%1$s`, `%2$d` — order-independent, compared as a sorted set. */
     private fun placeholders(text: String): List<String> =
         Regex("%\\d+\\$[a-zA-Z]").findAll(text).map { it.value }.sorted().toList()
 
@@ -49,7 +44,7 @@ class StringsParityTest {
     @Test
     fun `format placeholders match per key`() {
         en.forEach { (key, enText) ->
-            val zhText = zh[key] ?: return@forEach // key parity covered by the other test
+            val zhText = zh[key] ?: return@forEach
             assertEquals(
                 "placeholder mismatch for '$key' between values and values-zh",
                 placeholders(enText),

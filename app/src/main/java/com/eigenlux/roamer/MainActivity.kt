@@ -113,9 +113,7 @@ import kotlinx.coroutines.withContext
 import rikka.shizuku.Shizuku
 
 /**
- * Main screen. Structure: top app bar (title + global refresh) -> info summary block
- * (device / Shizuku / dual-SIM mini tiles) -> SIM detail block (four-section cards:
- * current value / read-only value / snapshot value / action area) -> log. Visual spec: docs/DESIGN.md.
+ * Main Activity host for the Roamer user interface.
  */
 class MainActivity : ComponentActivity() {
 
@@ -123,7 +121,6 @@ class MainActivity : ComponentActivity() {
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        // Must install before super.onCreate to take over the system splash screen (brand Harbor blue + icon foreground); dismissed once the first frame is ready.
         installSplashScreen()
         super.onCreate(savedInstanceState)
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE)
@@ -136,9 +133,6 @@ class MainActivity : ComponentActivity() {
         setContent {
             var themeMode by remember { mutableStateOf(ThemeModeStore.load(activity)) }
             val dark = themeMode.resolveDark()
-            // In-app forced light/dark does not recreate the Activity, so enableEdgeToEdge's auto status-bar
-            // icons won't switch with it -> explicitly set status/navigation bar icon light/dark per the currently
-            // effective theme, avoiding illegible icons when forcing light while the system is in dark mode.
             val view = LocalView.current
             SideEffect {
                 WindowCompat.getInsetsController(activity.window, view).run {
@@ -172,16 +166,10 @@ private fun RoamerApp(
     var sims by remember { mutableStateOf<List<SimInfo>>(emptyList()) }
     val readyMsg = stringResource(R.string.log_ready)
     var log by remember { mutableStateOf(LogState(LogLevel.INFO, readyMsg)) }
-    // busy = a privileged override/restore is in flight; owned solely by run() and held until the
-    // instrumentation truly finishes, so a background refresh can never clear it mid-operation (P1 #1).
     var busy by remember { mutableStateOf(false) }
-    // refreshing = a (read-only) SIM reload is in flight; drives the progress bar only, never gates buttons.
     var refreshing by remember { mutableStateOf(false) }
-    // Serializes privileged operations: even if the busy guard were bypassed, two instrumentation runs
-    // can never overlap and clobber each other's process-level shell delegation.
     val opMutex = remember { Mutex() }
     var shizukuGranted by remember { mutableStateOf(ShizukuManager.hasPermission()) }
-    // Region override (phase-2): master switch state + whether the full-screen app picker is shown.
     var regionMasterOn by remember { mutableStateOf(AppLocaleStore.isMasterOn(ctx)) }
     var showAppPicker by remember { mutableStateOf(false) }
     var shizukuAlive by remember { mutableStateOf(ShizukuManager.isBinderAlive()) }
@@ -191,21 +179,16 @@ private fun RoamerApp(
         shizukuGranted = ShizukuManager.hasPermission()
     }
 
-    /** Refresh all info (SIM list + Shizuku status). Manual entry = top app bar button; also auto-triggered on resume. */
     fun refreshAll() {
         refreshShizuku()
         scope.launch {
-            // Never race an in-flight privileged op: it holds busy/opMutex and refreshes on completion,
-            // so a concurrent reload here would either clear busy early (the P1 #1 bug) or show a stale mid-op state.
             if (busy || opMutex.isLocked) return@launch
             refreshing = true
-            // A single transient read failure should not clear the whole list (all cards would suddenly vanish) -> replace only on success.
             val loaded = withContext(Dispatchers.IO) {
                 runCatching { CarrierConfigController.loadSims(ctx) }.getOrNull()
             }
             if (loaded != null) {
                 sims = loaded
-                // Phase-2: reconcile enrolled apps' region locale with the (possibly changed) primary slot.
                 withContext(Dispatchers.IO) {
                     runCatching { LocaleOverrideController.sync(ctx, RegionLogic.primaryOf(loaded)) }
                 }
@@ -214,7 +197,6 @@ private fun RoamerApp(
         }
     }
 
-    // Auto-refresh triggers: app opened / app returns to foreground / Shizuku first granted permission
     LaunchedEffect(Unit) { refreshAll() }
     LaunchedEffect(shizukuGranted) { if (shizukuGranted) refreshAll() }
     DisposableEffect(lifecycleOwner) {
@@ -237,15 +219,11 @@ private fun RoamerApp(
     }
 
     fun run(block: () -> CarrierConfigController.Result) {
-        // Guard: ignore taps while an op is in flight. onClick runs on the main thread, so this
-        // check-then-set cannot interleave with another run(); buttons are also disabled via !busy.
         if (busy) return
         busy = true
         scope.launch {
             try {
-                // opMutex serializes the privileged work so two instrumentation runs never overlap.
                 val r = opMutex.withLock { withContext(Dispatchers.IO) { block() } }
-                // Partial batch success -> WARNING (no longer the self-contradictory "log reports failure while card shows overridden")
                 val level = when {
                     r.ok -> LogLevel.SUCCESS
                     r.partial -> LogLevel.WARNING
@@ -257,19 +235,16 @@ private fun RoamerApp(
                 }
                 if (loaded != null) {
                     sims = loaded
-                    // Phase-2: after a SIM override/restore, push the new region to enrolled apps (or restore them).
                     withContext(Dispatchers.IO) {
                         runCatching { LocaleOverrideController.sync(ctx, RegionLogic.primaryOf(loaded)) }
                     }
                 }
             } finally {
-                // Only cleared here, after the whole op (trigger + up-to-5s poll + reload) completes.
                 busy = false
             }
         }
     }
 
-    /** Restore all: batch-restore every overridden SIM in a single instrumentation run (single shell delegation, no concurrency). */
     fun runRestoreAll() {
         val subIds = sims.filter { it.overridden }.map { it.subId }
         if (subIds.isEmpty()) {
@@ -279,13 +254,11 @@ private fun RoamerApp(
         run { CarrierConfigController.restoreAll(ctx, subIds) }
     }
 
-    /** One-tap mask: batch-override every populated slot to the given country + that country's top-market-share carrier (single instrumentation). */
     fun runMaskAll(iso: String) {
         if (sims.isEmpty()) {
             log = LogState(LogLevel.INFO, ctx.getString(R.string.no_sim_to_mask))
             return
         }
-        // Skip SIMs whose real home country is already the target: overriding to the same country is pointless and would write a name override layer yet leave overridden=false (inconsistent state).
         val subIds = sims.filterNot { it.realCountryIso.equals(iso, ignoreCase = true) }.map { it.subId }
         if (subIds.isEmpty()) {
             log = LogState(LogLevel.INFO, ctx.getString(R.string.already_masked, iso.uppercase()))
@@ -295,7 +268,6 @@ private fun RoamerApp(
         run { CarrierConfigController.setOverrideAll(ctx, subIds, iso, name) }
     }
 
-    // Region override app picker takes over the whole screen when open; otherwise the main screen.
     if (showAppPicker) {
         AppPickerScreen(
             primary = RegionLogic.primaryOf(sims),
@@ -315,8 +287,6 @@ private fun RoamerApp(
         },
     ) { innerPadding ->
         Column(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
-            // A persistent indeterminate progress bar sits below the top bar (pinned) whenever a privileged
-            // op (up to 5s polling) or a SIM reload is in flight.
             if (busy || refreshing) LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
             Column(
                 modifier = Modifier
@@ -325,7 +295,6 @@ private fun RoamerApp(
                     .padding(Spacing.lg),
                 verticalArrangement = Arrangement.spacedBy(Spacing.xl),
             ) {
-            // —— Block 1: info summary ——
             InfoSummaryBlock(
                 shizukuAlive = shizukuAlive,
                 shizukuGranted = shizukuGranted,
@@ -333,13 +302,10 @@ private fun RoamerApp(
                 sims = sims,
             )
 
-            // —— Block 2: SIM details ——
             Column(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
                 val hasSim = sims.isNotEmpty()
                 val overriddenCount = sims.count { it.overridden }
                 val compactPad = PaddingValues(horizontal = Spacing.sm, vertical = Spacing.xs)
-                // Quick-switch section: label + 5 country buttons evenly sharing the width. Tapping one
-                // overrides every populated slot to that country's top-market-share carrier.
                 Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
                 Text(stringResource(R.string.section_quick_switch), style = MaterialTheme.typography.titleSmall)
                 Row(
@@ -348,9 +314,6 @@ private fun RoamerApp(
                     horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
                 ) {
                     listOf("us" to "US", "jp" to "JP", "kr" to "KR", "cn" to "CN", "hk" to "HK").forEach { (iso, label) ->
-                        // Highlight criteria: every SIM's effective country code equals this button's iso, and at least one
-                        // SIM is overridden -> the device is being masked as that country. Restoring / any further change that
-                        // breaks the all-match condition -> highlight is automatically cleared.
                         val active = hasSim &&
                             sims.all { it.countryIso.equals(iso, ignoreCase = true) } &&
                             sims.any { it.overridden }
@@ -391,7 +354,6 @@ private fun RoamerApp(
                 }
                 }
 
-                // SIM details header: title on the left, "restore all" on the right (disabled when nothing is overridden)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
@@ -429,7 +391,6 @@ private fun RoamerApp(
                 }
             }
 
-            // —— Region override (phase-2): follow the primary slot to override selected apps' region ——
             Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
                 Text(stringResource(R.string.section_region_override), style = MaterialTheme.typography.titleSmall)
                 Row(
@@ -456,7 +417,6 @@ private fun RoamerApp(
                         },
                     )
                 }
-                // "Selected apps" row → opens the full-screen picker; only tappable when the master switch is on.
                 Surface(
                     onClick = { showAppPicker = true },
                     enabled = regionMasterOn && shizukuGranted,
@@ -486,7 +446,6 @@ private fun RoamerApp(
                 )
             }
 
-            // —— Appearance: theme switch ——
             Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
                 Text(stringResource(R.string.section_appearance), style = MaterialTheme.typography.titleSmall)
                 SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
@@ -505,7 +464,6 @@ private fun RoamerApp(
                 }
             }
 
-            // —— Log ——
             Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
                 Text(stringResource(R.string.section_log), style = MaterialTheme.typography.titleSmall)
                 LogChip(log)
@@ -515,7 +473,6 @@ private fun RoamerApp(
     }
 }
 
-/** Info summary: device model / OS version + Shizuku status + dual-SIM mini tiles (horizontal row). */
 @Composable
 private fun InfoSummaryBlock(
     shizukuAlive: Boolean,
@@ -524,7 +481,6 @@ private fun InfoSummaryBlock(
     sims: List<SimInfo>,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-        // Capitalize first letter: Samsung's Build.MANUFACTURER returns lowercase "samsung" -> "Samsung"
         val vendor = Build.MANUFACTURER.replaceFirstChar { it.uppercase() }
         Text(
             "$vendor ${Build.MODEL}  ·  Android ${Build.VERSION.RELEASE}",
@@ -533,7 +489,6 @@ private fun InfoSummaryBlock(
         )
         ShizukuStatusBanner(alive = shizukuAlive, granted = shizukuGranted, onRequest = onRequestShizuku)
         if (sims.isNotEmpty()) {
-            // Equal height: CJK and Latin single-line line boxes differ slightly in height; IntrinsicSize.Min + fillMaxHeight aligns both cards to the taller one
             Row(
                 horizontalArrangement = Arrangement.spacedBy(Spacing.md),
                 modifier = Modifier.height(IntrinsicSize.Min),
@@ -546,7 +501,6 @@ private fun InfoSummaryBlock(
     }
 }
 
-/** Mini slot tile: skeuomorphic SIM contact color block + slot number + current iso / carrier name, dual SIMs side by side. */
 @Composable
 private fun MiniSimTile(sim: SimInfo, modifier: Modifier = Modifier) {
     val borderColor by animateColorAsState(
@@ -564,10 +518,8 @@ private fun MiniSimTile(sim: SimInfo, modifier: Modifier = Modifier) {
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         border = BorderStroke(1.dp, borderColor),
     ) {
-        // Card (Surface) clips content to the rounded-corner shape -> the overflowing part of the stamp is cleanly cut off at the card edge (overflow hidden).
         Box(modifier = Modifier.fillMaxSize()) {
             Column(
-                // Vertical space-between inside the card: slot number on top, iso at bottom, carrier name in the middle — after equalizing height, the leftover space is distributed into the gaps (like CSS flexbox)
                 modifier = Modifier.fillMaxHeight().padding(Spacing.md),
                 verticalArrangement = Arrangement.SpaceBetween,
             ) {
@@ -575,7 +527,6 @@ private fun MiniSimTile(sim: SimInfo, modifier: Modifier = Modifier) {
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
                 ) {
-                    // Landscape SIM card icon (Bootstrap sim-fill rotated 90°), neutral color to avoid consuming a semantic color
                     Icon(
                         imageVector = ImageVector.vectorResource(R.drawable.ic_sim_landscape),
                         contentDescription = null,
@@ -591,8 +542,6 @@ private fun MiniSimTile(sim: SimInfo, modifier: Modifier = Modifier) {
                 Text(
                     (if (sim.overridden) sim.carrierName else sim.realCarrierName).ifBlank { "-" },
                     style = MaterialTheme.typography.titleMedium,
-                    // Explicit Bold (700): CJK system fonts only ship 400/700 weights; titleMedium's 500
-                    // snaps Chinese back to 400 while Latin stays true Medium -> mismatched weights. Dropping to 700 unifies both.
                     fontWeight = FontWeight.Bold,
                     maxLines = 1,
                 )
@@ -603,8 +552,6 @@ private fun MiniSimTile(sim: SimInfo, modifier: Modifier = Modifier) {
                     maxLines = 1,
                 )
             }
-            // Overridden: stamp a tilted, semi-transparent mask "seal" watermark in the top-right corner (amber, echoing the overridden semantic of the border/badge).
-            // 80dp (twice the button icon size), offset rightward to overflow the card slightly; the overflow is clipped by the Card's rounded corners.
             if (sim.overridden) {
                 Icon(
                     imageVector = ImageVector.vectorResource(R.drawable.ic_mask),
@@ -621,10 +568,6 @@ private fun MiniSimTile(sim: SimInfo, modifier: Modifier = Modifier) {
     }
 }
 
-/**
- * Shizuku status banner (DESIGN.md §5: top status bar, no dialogs). When not ready, uses an eye-catching
- * tertiaryContainer background + guidance button; once ready, collapses to a quiet one-line confirmation to reduce visual noise.
- */
 @Composable
 private fun ShizukuStatusBanner(alive: Boolean, granted: Boolean, onRequest: () -> Unit) {
     if (alive && granted) {
@@ -635,7 +578,6 @@ private fun ShizukuStatusBanner(alive: Boolean, granted: Boolean, onRequest: () 
             Icon(
                 Icons.Filled.CheckCircle,
                 contentDescription = null,
-                // Green for the success semantic, distinct from tertiary amber (that's the "overridden / roaming" highlight)
                 tint = successColor,
                 modifier = Modifier.size(18.dp),
             )
@@ -673,7 +615,6 @@ private fun ShizukuStatusBanner(alive: Boolean, granted: Boolean, onRequest: () 
     }
 }
 
-/** Card's four sections: current value · read-only value · snapshot value (conditional) · action area (country/carrier selectors, horizontal row). */
 @Composable
 private fun SimCard(
     sim: SimInfo,
@@ -682,13 +623,11 @@ private fun SimCard(
     onOverride: (iso: String, name: String) -> Unit,
     onRestore: () -> Unit,
 ) {
-    // Override to: country initially unselected (placeholder); after picking a country, the carrier auto-fills that country's top-market-share carrier as the default, changeable from the read-only dropdown.
     var selectedCountry by remember { mutableStateOf<CountryPreset?>(null) }
     var carrierName by remember(selectedCountry) {
         mutableStateOf(selectedCountry?.let { CarrierPresets.forCountry(it.iso).firstOrNull() }.orEmpty())
     }
 
-    // On override/restore state change, the card border briefly transitions to Brass then settles back (DESIGN.md §6, ≤250ms, no bounce).
     val borderColor by animateColorAsState(
         targetValue = if (sim.overridden) {
             MaterialTheme.colorScheme.tertiary
@@ -709,8 +648,6 @@ private fun SimCard(
             modifier = Modifier.padding(Spacing.lg),
             verticalArrangement = Arrangement.spacedBy(Spacing.sm),
         ) {
-            // ① Slot identity: title (left) · subId/iccId read-only code values (right, untouched by any override).
-            //    The "overridden" badge is moved down to the bottom-left of section ⑤ (same row as the action buttons).
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -727,8 +664,6 @@ private fun SimCard(
 
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
-            // ② Original value + MCC/MNC: country code derived on the fly from the immutable MCC; carrier name derived
-            //    from the Carrier-ID DB (immune to carrier_name override), still the real name while an override is active. MCC/MNC belongs to the original value, on its own line.
             Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
                 ValueRow(
                     label = stringResource(R.string.value_original),
@@ -739,12 +674,9 @@ private fun SimCard(
                     "MCC/MNC:${sim.mcc}/${sim.mnc}",
                     style = RoamerCode,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    // Left edge aligns with the previous row's "country column": label width + in-row md spacing
                     modifier = Modifier.padding(start = ValueLabelWidth + Spacing.md),
                 )
             }
-            // ③ Current value: currently effective (may be overridden). When overridden, shows the override name; otherwise
-            //    uses the immune realCarrierName (getSimOperatorName is sticky on some slots after clearing the layer and unreliable -> use the Carrier-ID DB real name).
             ValueRow(
                 label = stringResource(R.string.value_current),
                 country = countryLabel(sim.countryIso),
@@ -753,10 +685,8 @@ private fun SimCard(
 
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
-            // ④ Override to: country/carrier in a horizontal row; carrier name supports free input + country-linked filtered dropdown
             SectionLabel(stringResource(R.string.section_override_to))
             Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-                // Country/carrier = 60/40: the longest country label fits on one line without mid-string truncation
                 CountryDropdown(
                     selected = selectedCountry,
                     excludeIso = sim.realCountryIso,
@@ -773,15 +703,11 @@ private fun SimCard(
                 )
             }
 
-            // ⑤ Badges (bottom-left): "primary slot" (default subscription, >= 2 SIMs) + "overridden" ·
-            //    action buttons (right-aligned).
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
             ) {
-                // Primary slot = the SIM apps read via no-arg TelephonyManager (getDefaultSubscriptionId).
-                // Secondary color to stay distinct from the tertiary/amber "overridden" badge.
                 if (sim.isDefaultSub) {
                     Text(
                         stringResource(R.string.badge_default_sub),
@@ -829,7 +755,6 @@ private fun SimCard(
     }
 }
 
-/** Country dropdown (ExposedDropdownMenuBox): locked to [CountryPresets] to avoid manually entering an invalid ISO. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CountryDropdown(
@@ -840,7 +765,6 @@ private fun CountryDropdown(
     modifier: Modifier = Modifier,
 ) {
     var expanded by remember { mutableStateOf(false) }
-    // Filter out the original value (this SIM's real ISO): overriding to the same country is pointless
     val options = remember(excludeIso) {
         CountryPresets.all.filterNot { it.iso.equals(excludeIso, ignoreCase = true) }
     }
@@ -873,9 +797,6 @@ private fun CountryDropdown(
     }
 }
 
-/**
- * Carrier name: **read-only dropdown** (no manual input); options are that country's carrier presets, sorted by market share. Disabled upstream when no country is selected.
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CarrierDropdown(
@@ -926,24 +847,14 @@ private fun SectionLabel(text: String) {
     )
 }
 
-/**
- * Localized country label `<name> (iso)`, consistent between the country dropdown and the SIM-slot
- * overview. A blank value falls back to `-`; an unlisted iso falls back to the raw iso (e.g. `xx`).
- * The name is resolved from string resources, so it follows the app locale and re-renders on switch.
- */
 @Composable
 private fun countryLabel(iso: String): String = when {
     iso.isBlank() -> "-"
     else -> CountryPresets.byIso(iso)?.let { "${stringResource(it.nameRes)} (${it.iso})" } ?: iso
 }
 
-/** Fixed width for value-row labels: fixes the "country column" left edge so the MCC/MNC row can align to it with matching padding. */
 private val ValueLabelWidth = 44.dp
 
-/**
- * Value row: `label  country/region    carrier name`. The label (original/current) is fixed at [ValueLabelWidth]
- * width; country and carrier each take an equal-width column (`weight(1f)`) -> the two rows align column by column, making it easy to eyeball the "original vs current" difference.
- */
 @Composable
 private fun ValueRow(label: String, country: String, carrier: String) {
     Row(
@@ -974,10 +885,6 @@ private fun ValueRow(label: String, country: String, carrier: String) {
     }
 }
 
-/**
- * Status chip (DESIGN.md §5): success = Success, failure = error, partial batch failure = Brass alert color.
- * State is not conveyed by color alone — it also carries an icon + text (colorblind-friendly).
- */
 @Composable
 private fun LogChip(log: LogState) {
     val (bg, fg, icon) = when (log.level) {
@@ -1026,6 +933,5 @@ private fun LogChip(log: LogState) {
     }
 }
 
-/** Unified redaction for log/UI: keep only head and tail to prevent sensitive values like ICCID from leaking in plaintext (screenshot-sharing scenarios). */
 private fun mask(s: String): String =
     if (s.isBlank()) "-" else if (s.length <= 6) s else "${s.take(4)}…${s.takeLast(2)}"

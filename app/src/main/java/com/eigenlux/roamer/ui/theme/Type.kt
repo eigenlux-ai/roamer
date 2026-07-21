@@ -7,14 +7,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
 /**
- * Roamer typography system.
- *
- * System sans-serif (Roboto / Source Han Sans) carries UI copy; technical code values (MCC/MNC/ISO/subId)
- * uniformly use the [RoamerCode] monospace style, improving scannability and the "technical tool" feel.
- * Only 2 font families (sans + mono). Hierarchy comes from font-size + weight contrast (≥1.25 ratio), not from piling on typefaces.
+ * Typography configuration for the Roamer UI.
  */
 val Typography = Typography(
-    // Page / large headline
     headlineSmall = TextStyle(
         fontFamily = FontFamily.Default,
         fontWeight = FontWeight.SemiBold,
@@ -22,7 +17,6 @@ val Typography = Typography(
         lineHeight = 30.sp,
         letterSpacing = 0.sp,
     ),
-    // Card title
     titleLarge = TextStyle(
         fontFamily = FontFamily.Default,
         fontWeight = FontWeight.SemiBold,
@@ -37,7 +31,6 @@ val Typography = Typography(
         lineHeight = 22.sp,
         letterSpacing = 0.1.sp,
     ),
-    // Section subtitle (SIM details / appearance / log): SemiBold to create weight contrast with body text
     titleSmall = TextStyle(
         fontFamily = FontFamily.Default,
         fontWeight = FontWeight.SemiBold,
@@ -45,7 +38,6 @@ val Typography = Typography(
         lineHeight = 20.sp,
         letterSpacing = 0.1.sp,
     ),
-    // Body
     bodyLarge = TextStyle(
         fontFamily = FontFamily.Default,
         fontWeight = FontWeight.Normal,
@@ -60,7 +52,6 @@ val Typography = Typography(
         lineHeight = 20.sp,
         letterSpacing = 0.2.sp,
     ),
-    // Supporting note
     bodySmall = TextStyle(
         fontFamily = FontFamily.Default,
         fontWeight = FontWeight.Normal,
@@ -68,7 +59,6 @@ val Typography = Typography(
         lineHeight = 18.sp,
         letterSpacing = 0.2.sp,
     ),
-    // Short label / status chip
     labelLarge = TextStyle(
         fontFamily = FontFamily.Default,
         fontWeight = FontWeight.Medium,
@@ -83,7 +73,6 @@ val Typography = Typography(
         lineHeight = 16.sp,
         letterSpacing = 0.4.sp,
     ),
-    // Smallest label (mini slot number, etc.)
     labelSmall = TextStyle(
         fontFamily = FontFamily.Default,
         fontWeight = FontWeight.Medium,
@@ -94,8 +83,7 @@ val Typography = Typography(
 )
 
 /**
- * Monospace style dedicated to technical code values: MCC / MNC / ISO / subId / MCCMNC.
- * E.g. `46007`, `cn`, `subId=3`. Used for all "machine-readable values", distinct from human copy.
+ * Monospace text style for technical codes (MCC, MNC, ISO, subId).
  */
 val RoamerCode = TextStyle(
     fontFamily = FontFamily.Monospace,

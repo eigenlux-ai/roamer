@@ -52,13 +52,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-/** One installed app in the picker (icon is loaded lazily per row). */
 private data class AppEntry(val pkg: String, val label: String, val isSystem: Boolean)
 
 /**
- * Full-screen app picker for the region-override "selected apps" list. Checking an app enrolls it
- * (captures baseline + applies the current target); unchecking restores its baseline. Enumeration
- * needs QUERY_ALL_PACKAGES (declared in the manifest); without it the system only returns a subset.
+ * App picker interface for selecting target applications to mirror SIM region settings.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -71,13 +68,10 @@ fun AppPickerScreen(primary: RegionLogic.PrimaryState, onClose: () -> Unit) {
     var showSystem by remember { mutableStateOf(false) }
     var enrolled by remember { mutableStateOf(AppLocaleStore.enrolled(ctx)) }
 
-    // Load installed apps off the main thread; re-run when the system-apps filter toggles.
     androidx.compose.runtime.LaunchedEffect(showSystem) {
         apps = null
         apps = withContext(Dispatchers.IO) {
             val pm = ctx.packageManager
-            // Snapshot the enrolled set at load time so the "enrolled on top" order stays stable while the
-            // user checks/unchecks (avoids rows jumping away mid-tap); re-entering the picker re-sorts.
             val snap = AppLocaleStore.enrolled(ctx)
             runCatching {
                 pm.getInstalledApplications(0)
@@ -180,7 +174,6 @@ private fun AppRow(app: AppEntry, checked: Boolean, onCheckedChange: (Boolean) -
     }
 }
 
-/** Lazily load and render an app icon (48dp); blank placeholder while loading / on failure. */
 @Composable
 private fun AppIcon(pkg: String) {
     val ctx = LocalContext.current

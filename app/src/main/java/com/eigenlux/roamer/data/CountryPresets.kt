@@ -4,15 +4,12 @@ import androidx.annotation.StringRes
 import com.eigenlux.roamer.R
 
 /**
- * Country preset table (pure static data, touches no hidden APIs, unit-testable/previewable).
+ * Country preset data class.
  *
- * @param iso     Two-letter country code (ISO 3166-1 alpha-2, lowercase); the override target value
- * @param mcc     Primary MCC (for display / carrier linkage only, not a legally precise value — some countries have multiple MCCs)
- * @param nameRes String resource of the localized display name (English in res/values, Chinese in res/values-zh).
- *                The display label is composed on the UI side as `<localized name> (iso)`, so the name follows the app locale.
- * @param defaultLocale Canonical BCP-47 locale (language + region) for this country, written to a selected app's
- *                per-app locale when its region follows this country (phase-2 region override; e.g. "en-US", "ja-JP").
- *                Multi-language regions use the dominant UI language (e.g. hk → zh-HK). The region subtag always equals [iso].
+ * @property iso Lowercase ISO 3166-1 alpha-2 country code.
+ * @property mcc Primary Mobile Country Code.
+ * @property nameRes String resource ID for localized display name.
+ * @property defaultLocale Default BCP-47 locale tag used for per-app locale syncing.
  */
 data class CountryPreset(
     val iso: String,
@@ -22,20 +19,15 @@ data class CountryPreset(
 )
 
 /**
- * Covers mainstream test regions. Common debug regions come first (us/jp/kr/hk/tw), the rest are
- * roughly ordered by geographic region.
- * Data source: ITU MCC allocation table (public information). Used only for the override-input
- * dropdown selection, not for any validation logic.
+ * Predefined list of country presets for quick selection.
  */
 object CountryPresets {
     val all: List<CountryPreset> = listOf(
-        // —— Common debug regions pinned to top ——
         CountryPreset("us", "310", R.string.country_us, "en-US"),
         CountryPreset("jp", "440", R.string.country_jp, "ja-JP"),
         CountryPreset("kr", "450", R.string.country_kr, "ko-KR"),
         CountryPreset("hk", "454", R.string.country_hk, "zh-HK"),
         CountryPreset("tw", "466", R.string.country_tw, "zh-TW"),
-        // —— The rest ——
         CountryPreset("cn", "460", R.string.country_cn, "zh-CN"),
         CountryPreset("mo", "455", R.string.country_mo, "zh-MO"),
         CountryPreset("sg", "525", R.string.country_sg, "en-SG"),

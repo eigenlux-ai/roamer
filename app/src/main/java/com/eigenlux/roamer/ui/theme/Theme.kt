@@ -68,11 +68,7 @@ private val DarkColorScheme = darkColorScheme(
 )
 
 /**
- * Roamer theme.
- *
- * dynamicColor is **off** by default: this app has a defined brand color (Harbor blue),
- * so it does not adopt Material You's wallpaper-derived colors, ensuring consistent brand
- * recognition across devices. Can be explicitly enabled when needed.
+ * Main application theme wrapper.
  */
 @Composable
 fun RoamerTheme(
@@ -99,11 +95,8 @@ fun RoamerTheme(
 }
 
 /**
- * Theme-aware "success" green. The Material colorScheme has no success slot, so it lives here separately:
- * expresses the success semantic (e.g. Shizuku granted), distinct from tertiary's brass amber (that's the "overridden / roaming" highlight).
- * Light theme uses dark green for contrast on white surfaces; dark theme uses light green.
+ * Theme-aware success state color.
  */
 val successColor: Color
     @Composable @ReadOnlyComposable
-    // Determine dark by the luminance of the actually effective color scheme (not isSystemInDarkTheme), so it stays correct when forcing light/dark.
     get() = if (MaterialTheme.colorScheme.surface.luminance() < 0.5f) SuccessDark else SuccessLight
