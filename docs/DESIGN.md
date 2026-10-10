@@ -91,6 +91,13 @@ Elevation shadows are not used anywhere; their hard directional edge reads as Ma
 - Technical values (MCC, MNC, ISO, subId, iccId) use `FontFamily.Monospace` through the `RoamerCode` style.
 - All sizes are in `sp`. Rows must hold up at a font scale of 1.3 and in English, where labels are longer: values truncate with an ellipsis and never wrap into a neighboring element.
 
+### Layout across languages
+English copy runs much longer than Chinese, so widths are never tuned to one language:
+
+- In the Original / Current rows, the label column and the carrier column take the measured width of their longest text. The country name gets everything that is left.
+- A menu row shows the country name without its ISO code. A value that still does not fit shrinks from 16sp down to 13sp before it is ellipsized. The code stays visible in the menu and on the Override button.
+- Titles and footnotes that wrap use balanced line breaks, so no single word is left on its own line.
+
 ## 5. Shape and Spacing (`Shape.kt`)
 
 - Spacing scale: `4dp`, `8dp`, `12dp`, `16dp`, `24dp`, `32dp`. Sections are separated by `32dp`.

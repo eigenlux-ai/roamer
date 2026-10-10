@@ -77,6 +77,7 @@ export JAVA_HOME=~/.local/share/mise/installs/java/temurin-21
 
 ## Internationalization Guidelines
 
-- In-app text is stored in `res/values/strings.xml` (English, default) and `res/values-zh/strings.xml` (Chinese).
+- In-app text is stored in `res/values/strings.xml` (English, default) and `res/values-zh/strings.xml` (Chinese). Chinese is the source copy; write new strings in Chinese first and translate the English from it. Chinese uses 覆写 for "override" everywhere.
+- English runs much longer than Chinese. Check any layout change in both languages; the rules are in `docs/DESIGN.md` under "Layout across languages".
 - Any modifications or additions to UI strings must update both files. The `StringsParityTest` JVM unit test verifies key parity between string tables.
 - Data structures in `CarrierPresets.kt` contain non-translated brand strings.

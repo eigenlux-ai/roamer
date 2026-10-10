@@ -104,7 +104,7 @@ com.eigenlux.roamer/
 
 ## 国际化
 
-界面文案维护在 `res/values`（默认英文）与 `res/values-zh`（中文）。JVM 单元测试 (`StringsParityTest`) 会自动检查两套文案 Key 的一致性。
+界面文案维护在 `res/values`（英文，默认语言）与 `res/values-zh`（中文）。中文是源文案，英文由中文翻译而来。JVM 单元测试 (`StringsParityTest`) 会自动检查两套文案 Key 的一致性。针对较长英文文案的排版规则见 `docs/DESIGN.md`。
 
 ## 已知限制
 

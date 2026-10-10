@@ -19,3 +19,6 @@ local.properties
 *.jks
 *.keystore
 keystore.properties
+
+# Local cache of the Impeccable design tooling
+.impeccable/

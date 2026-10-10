@@ -104,7 +104,7 @@ com.eigenlux.roamer/
 
 ## Internationalization
 
-UI text is defined in `res/values` (English default) and `res/values-zh` (Chinese). A JVM unit test (`StringsParityTest`) checks string key parity across translation files.
+UI text is defined in `res/values` (English, the default) and `res/values-zh` (Chinese). Chinese is the source copy; the English strings are translated from it. A JVM unit test (`StringsParityTest`) checks string key parity across translation files. Layout rules for the longer English copy are in `docs/DESIGN.md`.
 
 ## Limitations
 
