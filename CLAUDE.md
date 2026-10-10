@@ -4,7 +4,7 @@ Roamer is a rootless Android tool (Kotlin + Jetpack Compose) for overriding a SI
 
 ## Project Metadata
 
-- **Application ID / Namespace**: `com.eigenlux.roamer`
+- **Application ID / Namespace**: `com.eigenlux.roamer` (debug builds add the `.debug` suffix so they install next to a release build)
 - **SDK Target**: `minSdk 31`, `targetSdk 36`, `compileSdk 36`
 - **Language & Stack**: Kotlin 2.2.10, Jetpack Compose, Shizuku 13.1.5, HiddenApiBypass 4.3
 
@@ -20,11 +20,17 @@ Roamer handles this by:
 ### Baseline-Free Restore
 Roamer does not persist pre-override snapshots. Values are re-derived at runtime:
 - **Country ISO**: Derived from the immutable MCC (`MccUtil.countryFromMcc(getSimOperator)`). Restore uses a two-step write: write back the real ISO first to update the subscription database, then call `overrideConfig(null)` to clear the layer.
-- **Carrier Name**: Reverts automatically to production values when the override layer is cleared.
+- **Carrier Name**: Not reliably reverted by clearing the layer (a SIM can keep reporting the overridden name), so restore writes back the carrier-ID name (`getSimCarrierIdName`) together with the real ISO before clearing.
 - **Overridden State**: Evaluated live by comparing the MCC-derived ISO against `getSimCountryIso`.
 
 ### Multi-SIM Batching
 Multiple SIM slots are processed within a single instrumentation run and single shell delegation context. Triggering individual delegations concurrently can cause early permission drops (`stopDelegateShellPermissionIdentity`), failing secondary SIM restores.
+
+### In-Process Result Channel
+The instrumentation attaches to the running app process, so it reports its outcome (overall error and per-subId failures) through `InstrumentationTrigger.report`. `CarrierConfigController` surfaces that error directly and only polls telephony state for SIMs the run did not report as failed. If no outcome arrives, it falls back to polling alone.
+
+### Force Clear
+`CarrierConfigController.clearAll` targets SIMs that restore cannot reach because they are not detected as overridden. The `clear` action runs the same write-back as restore, but then calls `overrideConfig(null)` unconditionally (restore keeps the write-back when it has not settled).
 
 ## Project Structure
 
@@ -32,6 +38,7 @@ Multiple SIM slots are processed within a single instrumentation run and single 
 com.eigenlux.roamer/
 ├── core/   # Telephony bindings, privilege delegation, and system interaction
 │   ├── ShizukuManager.kt
+│   ├── SystemServices.kt
 │   ├── SimInfo.kt
 │   ├── MccUtil.kt
 │   ├── CarrierConfigController.kt
@@ -44,9 +51,10 @@ com.eigenlux.roamer/
 │   ├── CountryPresets.kt
 │   ├── CarrierPresets.kt
 │   └── AppLocaleStore.kt
-├── ui/     # Compose UI components and theme definition
-│   ├── theme/ (Color, Theme, Type, Shape, ThemeMode)
-│   └── MainActivity.kt
+├── ui/     # Theme definition
+│   └── theme/ (Color, Theme, Type, Shape, ThemeMode)
+├── MainActivity.kt
+├── MainViewModel.kt
 └── AppPickerScreen.kt
 ```
 

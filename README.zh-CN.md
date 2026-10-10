@@ -15,9 +15,11 @@ Roamer 通过 [Shizuku](https://shizuku.rikka.app/) 调用系统 Telephony API �
 ## 主要功能
 
 - 无需 Root：通过 Shizuku 覆盖 SIM 卡国家 ISO 及运营商名称。
-- 多卡支持：支持多 SIM 卡独立配置或一键批量应用/还原。
+- 多卡支持：支持多 SIM 卡独立配置或一键批量应用/还原。快速切换会把所有卡切到同一地区，真实归属地就是该地区的卡则直接还原。
 - 内置预设：提供常用国家与地区（美国、日本、韩国、中国大陆、中国香港等）及主流运营商配置。
 - 无快照还原：在运行时根据 MCC 实时重导真实值并回写，无需保存历史快照。
+- 强制清除：回写真实值并清除所有卡的覆盖层，用于“还原”无法处理的卡。
+- 提权执行的失败原因会按卡显示在应用内日志中。
 - 应用级区域同步：可选择特定应用跟随 SIM 伪装区域。
 - 调试友好：原值与当前值对比展示，技术参数（MCC/MNC/ISO/subId）采用等宽字体显示，支持浅色/深色主题。
 
@@ -36,7 +38,7 @@ Roamer 仅修改 CarrierConfig 的覆盖层，不修改底层 SIM 卡或 RIL 硬
 
 ## 环境要求
 
-- Android 12+ (minSdk 31)，已在 Android 16 (Samsung) 上测试。
+- Android 12+ (minSdk 31)，已在 Android 16 和 17 (Samsung) 上测试。
 - 已安装并启动 [Shizuku](https://shizuku.rikka.app/)（支持无线调试或 ADB 启动）。
 - 首次启动需授予 `READ_PHONE_STATE` 权限以读取卡槽信息。
 - 应用级区域同步功能需要 Android 13+ 系统支持。
@@ -56,7 +58,15 @@ Roamer 的解决路径：
 
 Roamer 不依赖本地保存的初始状态快照。在执行还原时：
 - 真实国家 ISO 通过不可变 MCC (`getSimOperator`) 重新派生。还原过程先回写真实 ISO 以更新订阅数据库，随后执行 `overrideConfig(null)` 清理覆盖层。
-- 运营商名称在覆盖层被清理后，系统再次读取时会自动恢复为原厂配置。
+- 仅清理覆盖层并不能可靠地恢复运营商名称（部分 SIM 会继续汇报被覆盖的名称），因此还原时会在清理前一并回写运营商 ID 对应的名称（`getSimCarrierIdName`）。
+
+### 强制清除
+
+“还原”只处理被识别为已覆盖的卡，判断依据是 MCC 派生的 ISO 与当前生效的 ISO 是否一致。强制清除对所有卡执行同样的回写，随后无条件清理覆盖层，即使回写尚未生效。
+
+### 结果回传
+
+Instrumentation 在应用进程内运行，因此直接在内存中把执行结果（整体错误和每张卡的失败原因）交还给调用方。执行失败时会立即报告真实原因；只有未被报告失败的卡才会继续轮询 Telephony 状态。
 
 ### 反射与隐藏 API
 
@@ -70,12 +80,15 @@ export JAVA_HOME=/path/to/jdk-21
 ./gradlew :app:testDebugUnitTest    # 执行 JVM 单元测试
 ```
 
+Debug 构建使用应用 ID `com.eigenlux.roamer.debug`，可以与 Release 版本并存，并需要单独授予 Shizuku 权限。CI 会在每次推送到 `main` 以及每个 Pull Request 上执行单元测试和 Debug 构建。
+
 ## 项目结构
 
 ```
 com.eigenlux.roamer/
 ├── core/   # Telephony API、Shizuku 绑定与 Instrumentation 提权逻辑
 │   ├── ShizukuManager
+│   ├── SystemServices
 │   ├── CarrierConfigController
 │   ├── InstrumentationTrigger
 │   ├── PrivilegedOverrideInstrumentation
@@ -83,7 +96,9 @@ com.eigenlux.roamer/
 │   ├── RegionLogic
 │   └── LocaleOverrideController
 ├── data/   # 预设数据与本地状态存储
-├── ui/     # Compose 界面、Material 3 主题与 MainActivity
+├── ui/     # Material 3 主题
+├── MainActivity.kt
+├── MainViewModel.kt
 └── AppPickerScreen.kt
 ```
 
@@ -94,6 +109,7 @@ com.eigenlux.roamer/
 ## 已知限制
 
 - 提权路径主要针对三星设备上 Shell UID 的限制逻辑进行适配，其他厂商设备为 Best-effort 支持。
+- 还原后的运营商名称取自运营商 ID 对应的名称，可能与覆盖前 SIM 汇报的名称不同。
 - 若在操作过程中 SIM 卡断开连接（如飞行模式），底层 Telephony 状态更新可能会有延迟。
 
 ## 开源协议

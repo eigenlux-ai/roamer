@@ -15,9 +15,11 @@ Optionally, Roamer can mirror the primary SIM's overridden country code to selec
 ## Features
 
 - Rootless SIM country ISO and carrier name override via Shizuku.
-- Multi-SIM support: apply or restore settings across all active slots.
+- Multi-SIM support: apply or restore settings across all active slots. Quick switch moves every SIM to one region and restores a SIM whose real country is that region.
 - Preset configurations for popular target regions (US, JP, KR, CN, HK) and carriers.
 - Reversible restore: values are derived dynamically at runtime rather than saved to disk.
+- Force clear: writes back the real values and clears every SIM's override layer, for SIMs that restore cannot target.
+- Failure reasons from the privileged run are reported in the in-app log, per SIM.
 - Optional per-app region override for targeted app testing.
 - UI details: side-by-side display of original vs. active values, monospace technical codes (MCC/MNC/ISO/subId), and light/dark theme support.
 
@@ -36,7 +38,7 @@ Because MNC and network values are read-only, Roamer does not modify actual phon
 
 ## Requirements
 
-- Android 12+ (minSdk 31). Tested on Android 16 (Samsung).
+- Android 12+ (minSdk 31). Tested on Android 16 and 17 (Samsung).
 - [Shizuku](https://shizuku.rikka.app/) running via Wireless Debugging or ADB.
 - `READ_PHONE_STATE` permission granted on first launch to enumerate active SIM slots.
 - Per-app region override features require Android 13+ (System per-app locale API).
@@ -56,7 +58,15 @@ To bypass this restriction without root:
 
 Roamer does not persist pre-override snapshots. When restoring:
 - The real country ISO is calculated from the immutable MCC (`getSimOperator`). The restore operation writes back the real ISO first to update the subscription database, then clears the override layer (`overrideConfig(null)`).
-- The carrier name is automatically restored by clearing the override layer, which causes telephony services to pull the original carrier identifier on the next read.
+- Clearing the override layer does not reliably revert the carrier name (a SIM can keep reporting the overridden name), so restore also writes back the carrier-ID name (`getSimCarrierIdName`) before clearing.
+
+### Force Clear
+
+Restore only targets SIMs detected as overridden, which is decided by comparing the MCC-derived ISO with the effective one. Force clear runs the same write-back on every SIM and then clears the override layer unconditionally, even when the write-back has not settled.
+
+### Result Reporting
+
+The instrumentation runs inside the app process, so it hands its outcome (overall error and per-SIM failures) back in memory. A failed run is reported immediately with its real cause; telephony state is polled only for SIMs the run did not report as failed.
 
 ### Reflection & Hidden APIs
 
@@ -70,12 +80,15 @@ export JAVA_HOME=/path/to/jdk-21
 ./gradlew :app:testDebugUnitTest    # Run JVM unit tests
 ```
 
+Debug builds use the application ID `com.eigenlux.roamer.debug`, so they install next to a release build and need their own Shizuku authorization. CI runs the unit tests and a debug build on every push to `main` and on pull requests.
+
 ## Project Structure
 
 ```
 com.eigenlux.roamer/
 ├── core/   # Telephony APIs, Shizuku bindings, and instrumentation logic
 │   ├── ShizukuManager
+│   ├── SystemServices
 │   ├── CarrierConfigController
 │   ├── InstrumentationTrigger
 │   ├── PrivilegedOverrideInstrumentation
@@ -83,7 +96,9 @@ com.eigenlux.roamer/
 │   ├── RegionLogic
 │   └── LocaleOverrideController
 ├── data/   # Region/carrier presets and local app state storage
-├── ui/     # Compose UI, Material 3 theme, and main activity
+├── ui/     # Material 3 theme
+├── MainActivity.kt
+├── MainViewModel.kt
 └── AppPickerScreen.kt
 ```
 
@@ -94,6 +109,7 @@ UI text is defined in `res/values` (English default) and `res/values-zh` (Chines
 ## Limitations
 
 - Privilege delegation was designed around Samsung's shell UID restrictions on Android 12-16. Other OEM implementations are supported on a best-effort basis.
+- After a restore, the carrier name is the carrier-ID name, which can differ from the name the SIM reported before the override.
 - If a SIM loses connection (e.g., airplane mode) during operation, telephony state updates may lag behind UI confirmation.
 
 ## License
