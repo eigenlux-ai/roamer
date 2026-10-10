@@ -19,6 +19,8 @@
     <!-- ===== Action row ===== -->
     <string name="restore_all">Restore all</string>
     <string name="restore_all_count">Restore all (%1$d)</string>
+    <string name="action_force_clear">Force clear</string>
+    <string name="force_clear_hint">Writes back the real values and clears every SIM\'s override layer. Use it when Restore is unavailable but the carrier name or region still looks wrong.</string>
 
     <!-- ===== Empty / status messages ===== -->
     <string name="log_ready">Ready.</string>
@@ -58,6 +60,7 @@
     <!-- Operation nouns, substituted as %1$s into the result templates below. -->
     <string name="op_override">Override</string>
     <string name="op_restore">Restore</string>
+    <string name="op_clear">Force clear</string>
     <string name="result_single_success">%1$s succeeded (%2$s)</string>
     <string name="result_single_timeout">%1$s did not take effect within %2$dms (%3$s; see logcat RoamerPriv)</string>
     <string name="result_all_success">%1$s: all %2$d SIMs succeeded (%3$s)</string>
@@ -65,6 +68,7 @@
     <string name="result_partial">%1$s partial: %2$d/%3$d effective, subId=%4$s not effective (see logcat RoamerPriv)</string>
     <string name="result_fail">%1$s failed: %2$s</string>
     <string name="detail_iso_restored">iso restored to real value</string>
+    <string name="detail_layer_cleared">override layer cleared</string>
 
     <!-- ===== Country names ===== -->
     <!-- Common debug regions -->

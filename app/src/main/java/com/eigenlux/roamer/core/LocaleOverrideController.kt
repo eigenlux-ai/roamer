@@ -1,13 +1,10 @@
 package com.eigenlux.roamer.core
 
 import android.content.Context
-import android.os.IBinder
 import android.os.LocaleList
 import android.os.Process
 import android.util.Log
 import com.eigenlux.roamer.data.AppLocaleStore
-import org.lsposed.hiddenapibypass.HiddenApiBypass
-import rikka.shizuku.ShizukuBinderWrapper
 
 /**
  * Manages per-app locale overrides using `ILocaleManager` via Shizuku.
@@ -17,17 +14,11 @@ object LocaleOverrideController {
     private const val TAG = "RoamerLocale"
 
     init {
-        HiddenApiBypass.addHiddenApiExemptions("L")
+        SystemServices.ensureHiddenApiAccess()
     }
 
-    private fun localeManager(): Any {
-        val binder = Class.forName("android.os.ServiceManager")
-            .getMethod("getService", String::class.java)
-            .invoke(null, Context.LOCALE_SERVICE) as IBinder
-        return Class.forName("android.app.ILocaleManager\$Stub")
-            .getMethod("asInterface", IBinder::class.java)
-            .invoke(null, ShizukuBinderWrapper(binder))!!
-    }
+    private fun localeManager(): Any =
+        SystemServices.shizukuInterface(Context.LOCALE_SERVICE, "android.app.ILocaleManager")
 
     private fun userId(): Int = Process.myUid() / 100000
 

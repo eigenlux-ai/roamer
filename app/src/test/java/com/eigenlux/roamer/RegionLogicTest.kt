@@ -12,10 +12,17 @@ import org.junit.Test
  */
 class RegionLogicTest {
 
-    private fun sim(country: String, overridden: Boolean, isDefault: Boolean, slot: Int = 1, subId: Int = slot) =
+    private fun sim(
+        country: String,
+        overridden: Boolean,
+        isDefault: Boolean,
+        slot: Int = 1,
+        subId: Int = slot,
+        real: String = "cn",
+    ) =
         SimInfo(
             slot = slot, subId = subId, carrierName = "C", countryIso = country,
-            mcc = "000", mnc = "00", iccId = "", realCountryIso = "cn", realCarrierName = "C",
+            mcc = "000", mnc = "00", iccId = "", realCountryIso = real, realCarrierName = "C",
             overridden = overridden, isDefaultSub = isDefault,
         )
 
@@ -65,5 +72,24 @@ class RegionLogicTest {
             sim("jp", overridden = true, isDefault = false, slot = 2, subId = 3),
         )
         assertNull(RegionLogic.primaryOf(sims).country)
+    }
+
+    @Test
+    fun `maskPlan overrides foreign sims and restores an overridden home sim`() {
+        val sims = listOf(
+            sim("jp", overridden = true, isDefault = true, slot = 1, subId = 2, real = "us"),
+            sim("cn", overridden = false, isDefault = false, slot = 2, subId = 3, real = "cn"),
+        )
+        val plan = RegionLogic.maskPlan(sims, "US")
+        assertEquals(listOf(2), plan.restore)
+        assertEquals(listOf(3), plan.override)
+    }
+
+    @Test
+    fun `maskPlan leaves a home sim that is not overridden untouched`() {
+        val sims = listOf(sim("us", overridden = false, isDefault = false, real = "us"))
+        val plan = RegionLogic.maskPlan(sims, "us")
+        assertEquals(emptyList<Int>(), plan.restore)
+        assertEquals(emptyList<Int>(), plan.override)
     }
 }

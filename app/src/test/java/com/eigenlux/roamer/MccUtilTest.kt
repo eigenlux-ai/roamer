@@ -21,6 +21,15 @@ class MccUtilTest {
     }
 
     @Test
+    fun `mcc outside the country presets maps to iso`() {
+        assertEquals("eg", MccUtil.isoFromMccTable("60201"))
+        assertEquals("pk", MccUtil.isoFromMccTable("41001"))
+        assertEquals("ng", MccUtil.isoFromMccTable("62130"))
+        assertEquals("mx", MccUtil.isoFromMccTable("334020"))
+        assertEquals("tr", MccUtil.isoFromMccTable("28601"))
+    }
+
+    @Test
     fun `unknown or invalid mcc returns empty`() {
         assertEquals("", MccUtil.isoFromMccTable("999"))
         assertEquals("", MccUtil.isoFromMccTable(""))

@@ -1,6 +1,8 @@
 package com.eigenlux.roamer
 
 import android.content.pm.ApplicationInfo
+import android.util.LruCache
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -33,9 +35,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -52,6 +56,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+private val iconCache = LruCache<String, ImageBitmap>(256)
+
 private data class AppEntry(val pkg: String, val label: String, val isSystem: Boolean)
 
 /**
@@ -64,8 +70,8 @@ fun AppPickerScreen(primary: RegionLogic.PrimaryState, onClose: () -> Unit) {
     val scope = rememberCoroutineScope()
 
     var apps by remember { mutableStateOf<List<AppEntry>?>(null) }
-    var query by remember { mutableStateOf("") }
-    var showSystem by remember { mutableStateOf(false) }
+    var query by rememberSaveable { mutableStateOf("") }
+    var showSystem by rememberSaveable { mutableStateOf(false) }
     var enrolled by remember { mutableStateOf(AppLocaleStore.enrolled(ctx)) }
 
     androidx.compose.runtime.LaunchedEffect(showSystem) {
@@ -84,6 +90,8 @@ fun AppPickerScreen(primary: RegionLogic.PrimaryState, onClose: () -> Unit) {
             }.getOrDefault(emptyList())
         }
     }
+
+    BackHandler(onBack = onClose)
 
     Scaffold(
         topBar = {
@@ -140,9 +148,14 @@ fun AppPickerScreen(primary: RegionLogic.PrimaryState, onClose: () -> Unit) {
                                     checked = enrolled.contains(app.pkg),
                                     onCheckedChange = { checked ->
                                         enrolled = enrolled.toMutableSet().apply { if (checked) add(app.pkg) else remove(app.pkg) }
-                                        scope.launch(Dispatchers.IO) {
-                                            if (checked) LocaleOverrideController.enroll(ctx, app.pkg, primary)
-                                            else LocaleOverrideController.unenroll(ctx, app.pkg)
+                                        scope.launch {
+                                            withContext(Dispatchers.IO) {
+                                                if (checked) LocaleOverrideController.enroll(ctx, app.pkg, primary)
+                                                else LocaleOverrideController.unenroll(ctx, app.pkg)
+                                            }
+                                            // The operation can be refused; show what was actually stored.
+                                            val stored = AppLocaleStore.isEnrolled(ctx, app.pkg)
+                                            enrolled = if (stored) enrolled + app.pkg else enrolled - app.pkg
                                         }
                                     },
                                 )
@@ -177,11 +190,12 @@ private fun AppRow(app: AppEntry, checked: Boolean, onCheckedChange: (Boolean) -
 @Composable
 private fun AppIcon(pkg: String) {
     val ctx = LocalContext.current
-    var bitmap by remember(pkg) { mutableStateOf<androidx.compose.ui.graphics.ImageBitmap?>(null) }
+    var bitmap by remember(pkg) { mutableStateOf(iconCache.get(pkg)) }
     androidx.compose.runtime.LaunchedEffect(pkg) {
+        if (bitmap != null) return@LaunchedEffect
         bitmap = withContext(Dispatchers.IO) {
             runCatching { ctx.packageManager.getApplicationIcon(pkg).toBitmap(96, 96).asImageBitmap() }.getOrNull()
-        }
+        }?.also { iconCache.put(pkg, it) }
     }
     val bmp = bitmap
     if (bmp != null) {

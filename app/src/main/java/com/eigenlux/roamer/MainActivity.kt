@@ -8,6 +8,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.viewModels
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
@@ -61,17 +62,17 @@ import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -89,10 +90,7 @@ import androidx.core.view.WindowCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import com.eigenlux.roamer.core.CarrierConfigController
-import com.eigenlux.roamer.core.LocaleOverrideController
 import com.eigenlux.roamer.core.RegionLogic
-import com.eigenlux.roamer.core.ShizukuManager
 import com.eigenlux.roamer.core.SimInfo
 import com.eigenlux.roamer.data.AppLocaleStore
 import com.eigenlux.roamer.data.CarrierPresets
@@ -105,17 +103,13 @@ import com.eigenlux.roamer.ui.theme.ThemeMode
 import com.eigenlux.roamer.ui.theme.ThemeModeStore
 import com.eigenlux.roamer.ui.theme.resolveDark
 import com.eigenlux.roamer.ui.theme.successColor
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.withContext
-import rikka.shizuku.Shizuku
 
 /**
  * Main Activity host for the Roamer user interface.
  */
 class MainActivity : ComponentActivity() {
+
+    private val vm: MainViewModel by viewModels()
 
     private val requestPhoneState =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
@@ -142,6 +136,7 @@ class MainActivity : ComponentActivity() {
             }
             RoamerTheme(darkTheme = dark) {
                 RoamerApp(
+                    vm = vm,
                     themeMode = themeMode,
                     onThemeModeChange = { themeMode = it; ThemeModeStore.save(activity, it) },
                 )
@@ -150,135 +145,39 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-private enum class LogLevel { INFO, SUCCESS, ERROR, WARNING }
-private data class LogState(val level: LogLevel, val message: String)
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun RoamerApp(
+    vm: MainViewModel,
     themeMode: ThemeMode,
     onThemeModeChange: (ThemeMode) -> Unit,
 ) {
     val ctx = LocalContext.current
-    val scope = rememberCoroutineScope()
     val lifecycleOwner = LocalLifecycleOwner.current
+    val sims = vm.sims
+    val busy = vm.busy
+    val shizukuGranted = vm.shizukuGranted
+    val regionMasterOn = vm.regionMasterOn
 
-    var sims by remember { mutableStateOf<List<SimInfo>>(emptyList()) }
-    val readyMsg = stringResource(R.string.log_ready)
-    var log by remember { mutableStateOf(LogState(LogLevel.INFO, readyMsg)) }
-    var busy by remember { mutableStateOf(false) }
-    var refreshing by remember { mutableStateOf(false) }
-    val opMutex = remember { Mutex() }
-    var shizukuGranted by remember { mutableStateOf(ShizukuManager.hasPermission()) }
-    var regionMasterOn by remember { mutableStateOf(AppLocaleStore.isMasterOn(ctx)) }
-    var showAppPicker by remember { mutableStateOf(false) }
-    var shizukuAlive by remember { mutableStateOf(ShizukuManager.isBinderAlive()) }
-
-    fun refreshShizuku() {
-        shizukuAlive = ShizukuManager.isBinderAlive()
-        shizukuGranted = ShizukuManager.hasPermission()
-    }
-
-    fun refreshAll() {
-        refreshShizuku()
-        scope.launch {
-            if (busy || opMutex.isLocked) return@launch
-            refreshing = true
-            val loaded = withContext(Dispatchers.IO) {
-                runCatching { CarrierConfigController.loadSims(ctx) }.getOrNull()
-            }
-            if (loaded != null) {
-                sims = loaded
-                withContext(Dispatchers.IO) {
-                    runCatching { LocaleOverrideController.sync(ctx, RegionLogic.primaryOf(loaded)) }
-                }
-            }
-            refreshing = false
-        }
-    }
-
-    LaunchedEffect(Unit) { refreshAll() }
-    LaunchedEffect(shizukuGranted) { if (shizukuGranted) refreshAll() }
     DisposableEffect(lifecycleOwner) {
-        val permListener = Shizuku.OnRequestPermissionResultListener { _, _ -> refreshShizuku() }
-        val aliveListener = Shizuku.OnBinderReceivedListener { refreshShizuku() }
-        val deadListener = Shizuku.OnBinderDeadListener { refreshShizuku() }
-        Shizuku.addRequestPermissionResultListener(permListener)
-        Shizuku.addBinderReceivedListenerSticky(aliveListener)
-        Shizuku.addBinderDeadListener(deadListener)
         val obs = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) refreshAll()
+            if (event == Lifecycle.Event.ON_RESUME) vm.refreshAll()
         }
         lifecycleOwner.lifecycle.addObserver(obs)
-        onDispose {
-            Shizuku.removeRequestPermissionResultListener(permListener)
-            Shizuku.removeBinderReceivedListener(aliveListener)
-            Shizuku.removeBinderDeadListener(deadListener)
-            lifecycleOwner.lifecycle.removeObserver(obs)
-        }
+        onDispose { lifecycleOwner.lifecycle.removeObserver(obs) }
     }
 
-    fun run(block: () -> CarrierConfigController.Result) {
-        if (busy) return
-        busy = true
-        scope.launch {
-            try {
-                val r = opMutex.withLock { withContext(Dispatchers.IO) { block() } }
-                val level = when {
-                    r.ok -> LogLevel.SUCCESS
-                    r.partial -> LogLevel.WARNING
-                    else -> LogLevel.ERROR
-                }
-                log = LogState(level, r.output)
-                val loaded = withContext(Dispatchers.IO) {
-                    runCatching { CarrierConfigController.loadSims(ctx) }.getOrNull()
-                }
-                if (loaded != null) {
-                    sims = loaded
-                    withContext(Dispatchers.IO) {
-                        runCatching { LocaleOverrideController.sync(ctx, RegionLogic.primaryOf(loaded)) }
-                    }
-                }
-            } finally {
-                busy = false
-            }
-        }
-    }
-
-    fun runRestoreAll() {
-        val subIds = sims.filter { it.overridden }.map { it.subId }
-        if (subIds.isEmpty()) {
-            log = LogState(LogLevel.INFO, ctx.getString(R.string.nothing_to_restore))
-            return
-        }
-        run { CarrierConfigController.restoreAll(ctx, subIds) }
-    }
-
-    fun runMaskAll(iso: String) {
-        if (sims.isEmpty()) {
-            log = LogState(LogLevel.INFO, ctx.getString(R.string.no_sim_to_mask))
-            return
-        }
-        val subIds = sims.filterNot { it.realCountryIso.equals(iso, ignoreCase = true) }.map { it.subId }
-        if (subIds.isEmpty()) {
-            log = LogState(LogLevel.INFO, ctx.getString(R.string.already_masked, iso.uppercase()))
-            return
-        }
-        val name = CarrierPresets.forCountry(iso).firstOrNull().orEmpty()
-        run { CarrierConfigController.setOverrideAll(ctx, subIds, iso, name) }
-    }
-
-    if (showAppPicker) {
+    if (vm.showAppPicker) {
         AppPickerScreen(
             primary = RegionLogic.primaryOf(sims),
-            onClose = { showAppPicker = false },
+            onClose = { vm.showAppPicker = false },
         )
     } else Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.app_name), style = MaterialTheme.typography.titleLarge) },
                 actions = {
-                    IconButton(onClick = { refreshAll() }, enabled = !busy) {
+                    IconButton(onClick = { vm.refreshAll() }, enabled = !busy) {
                         Icon(Icons.Filled.Refresh, contentDescription = stringResource(R.string.cd_refresh_all))
                     }
                 },
@@ -287,7 +186,7 @@ private fun RoamerApp(
         },
     ) { innerPadding ->
         Column(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
-            if (busy || refreshing) LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+            if (busy || vm.refreshing) LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -296,9 +195,9 @@ private fun RoamerApp(
                 verticalArrangement = Arrangement.spacedBy(Spacing.xl),
             ) {
             InfoSummaryBlock(
-                shizukuAlive = shizukuAlive,
+                shizukuAlive = vm.shizukuAlive,
                 shizukuGranted = shizukuGranted,
-                onRequestShizuku = { ShizukuManager.requestPermission(); refreshShizuku() },
+                onRequestShizuku = { vm.requestShizuku() },
                 sims = sims,
             )
 
@@ -331,7 +230,7 @@ private fun RoamerApp(
                             FilledTonalButton(
                                 modifier = Modifier.weight(1f),
                                 enabled = enabled,
-                                onClick = { runMaskAll(iso) },
+                                onClick = { vm.maskAll(iso) },
                                 shape = RoundedCornerShape(Spacing.md),
                                 contentPadding = compactPad,
                                 colors = ButtonDefaults.filledTonalButtonColors(
@@ -344,7 +243,7 @@ private fun RoamerApp(
                             OutlinedButton(
                                 modifier = Modifier.weight(1f),
                                 enabled = enabled,
-                                onClick = { runMaskAll(iso) },
+                                onClick = { vm.maskAll(iso) },
                                 shape = RoundedCornerShape(Spacing.md),
                                 contentPadding = compactPad,
                                 content = content,
@@ -362,7 +261,7 @@ private fun RoamerApp(
                     Spacer(Modifier.weight(1f))
                     Button(
                         enabled = !busy && shizukuGranted && overriddenCount > 0,
-                        onClick = { runRestoreAll() },
+                        onClick = { vm.restoreAll() },
                         shape = RoundedCornerShape(Spacing.md),
                         contentPadding = compactPad,
                     ) {
@@ -381,12 +280,27 @@ private fun RoamerApp(
                                 sim = sim,
                                 busy = busy,
                                 shizukuGranted = shizukuGranted,
-                                onOverride = { iso, name ->
-                                    run { CarrierConfigController.setOverride(ctx, sim.subId, iso, name) }
-                                },
-                                onRestore = { run { CarrierConfigController.restore(ctx, sim.subId) } },
+                                onOverride = { iso, name -> vm.override(sim.subId, iso, name) },
+                                onRestore = { vm.restore(sim.subId) },
                             )
                         }
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(Spacing.md),
+                    ) {
+                        Text(
+                            stringResource(R.string.force_clear_hint),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.weight(1f),
+                        )
+                        TextButton(
+                            enabled = !busy && shizukuGranted,
+                            onClick = { vm.forceClearAll() },
+                            shape = RoundedCornerShape(Spacing.md),
+                        ) { Text(stringResource(R.string.action_force_clear)) }
                     }
                 }
             }
@@ -409,16 +323,11 @@ private fun RoamerApp(
                     Switch(
                         checked = regionMasterOn,
                         enabled = shizukuGranted,
-                        onCheckedChange = { on ->
-                            regionMasterOn = on
-                            scope.launch(Dispatchers.IO) {
-                                LocaleOverrideController.setMaster(ctx, on, RegionLogic.primaryOf(sims))
-                            }
-                        },
+                        onCheckedChange = { vm.setRegionMaster(it) },
                     )
                 }
                 Surface(
-                    onClick = { showAppPicker = true },
+                    onClick = { vm.showAppPicker = true },
                     enabled = regionMasterOn && shizukuGranted,
                     shape = RoundedCornerShape(Spacing.md),
                     color = MaterialTheme.colorScheme.surfaceVariant,
@@ -466,7 +375,7 @@ private fun RoamerApp(
 
             Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
                 Text(stringResource(R.string.section_log), style = MaterialTheme.typography.titleSmall)
-                LogChip(log)
+                LogChip(vm.log)
             }
             }
         }
@@ -623,9 +532,10 @@ private fun SimCard(
     onOverride: (iso: String, name: String) -> Unit,
     onRestore: () -> Unit,
 ) {
-    var selectedCountry by remember { mutableStateOf<CountryPreset?>(null) }
-    var carrierName by remember(selectedCountry) {
-        mutableStateOf(selectedCountry?.let { CarrierPresets.forCountry(it.iso).firstOrNull() }.orEmpty())
+    var selectedIso by rememberSaveable { mutableStateOf<String?>(null) }
+    val selectedCountry = selectedIso?.let { CountryPresets.byIso(it) }
+    var carrierName by rememberSaveable(selectedIso) {
+        mutableStateOf(selectedIso?.let { CarrierPresets.forCountry(it).firstOrNull() }.orEmpty())
     }
 
     val borderColor by animateColorAsState(
@@ -691,7 +601,7 @@ private fun SimCard(
                     selected = selectedCountry,
                     excludeIso = sim.realCountryIso,
                     enabled = !busy && shizukuGranted,
-                    onSelect = { selectedCountry = it },
+                    onSelect = { selectedIso = it.iso },
                     modifier = Modifier.weight(0.6f),
                 )
                 CarrierDropdown(

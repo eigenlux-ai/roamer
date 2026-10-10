@@ -1,10 +1,7 @@
 package com.eigenlux.roamer.core
 
-import android.os.IBinder
 import android.telephony.SubscriptionInfo
 import android.util.Log
-import org.lsposed.hiddenapibypass.HiddenApiBypass
-import rikka.shizuku.ShizukuBinderWrapper
 
 /**
  * Reads subscription ICCIDs directly via Shizuku binder IPC to bypass App-side identifier redaction.
@@ -14,7 +11,7 @@ object PrivilegedSubscriptionReader {
     private const val TAG = "RoamerSubRead"
 
     init {
-        HiddenApiBypass.addHiddenApiExemptions("L")
+        SystemServices.ensureHiddenApiAccess()
     }
 
     /**
@@ -23,12 +20,7 @@ object PrivilegedSubscriptionReader {
     fun readIccIds(): Map<Int, String> {
         if (!ShizukuManager.hasPermission()) return emptyMap()
         return runCatching {
-            val binder = Class.forName("android.os.ServiceManager")
-                .getMethod("getService", String::class.java)
-                .invoke(null, "isub") as IBinder
-            val isub = Class.forName("com.android.internal.telephony.ISub\$Stub")
-                .getMethod("asInterface", IBinder::class.java)
-                .invoke(null, ShizukuBinderWrapper(binder))
+            val isub = SystemServices.shizukuInterface("isub", "com.android.internal.telephony.ISub")
 
             @Suppress("UNCHECKED_CAST")
             val list = isub.javaClass

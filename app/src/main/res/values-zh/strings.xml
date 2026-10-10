@@ -19,6 +19,8 @@
     <!-- ===== 操作行 ===== -->
     <string name="restore_all">还原全部</string>
     <string name="restore_all_count">还原全部(%1$d)</string>
+    <string name="action_force_clear">强制清除</string>
+    <string name="force_clear_hint">回写真实值并清除所有卡的覆写层。还原按钮不可用,但运营商名或归属地仍不正常时使用。</string>
 
     <!-- ===== 空态 / 状态消息 ===== -->
     <string name="log_ready">就绪。</string>
@@ -58,6 +60,7 @@
     <!-- 操作动词,作为 %1$s 代入下方结果模板。 -->
     <string name="op_override">覆写</string>
     <string name="op_restore">还原</string>
+    <string name="op_clear">强制清除</string>
     <string name="result_single_success">%1$s 成功(%2$s)</string>
     <string name="result_single_timeout">%1$s 未在 %2$dms 内生效(%3$s;看 logcat RoamerPriv)</string>
     <string name="result_all_success">%1$s %2$d 卡全部成功(%3$s)</string>
@@ -65,6 +68,7 @@
     <string name="result_partial">%1$s 部分成功:%2$d/%3$d 生效,未生效 subId=%4$s(看 logcat RoamerPriv)</string>
     <string name="result_fail">%1$s 失败: %2$s</string>
     <string name="detail_iso_restored">iso 已回真值</string>
+    <string name="detail_layer_cleared">覆写层已清除</string>
 
     <!-- ===== 国家名 ===== -->
     <!-- 常用调试地区 -->

@@ -3,15 +3,12 @@ package com.eigenlux.roamer.core
 import android.app.Instrumentation
 import android.content.Context
 import android.os.Bundle
-import android.os.IBinder
 import android.os.PersistableBundle
 import android.os.Process
 import android.telephony.CarrierConfigManager
 import android.telephony.TelephonyManager
 import android.util.Log
-import org.lsposed.hiddenapibypass.HiddenApiBypass
 import rikka.shizuku.Shizuku
-import rikka.shizuku.ShizukuBinderWrapper
 import java.lang.reflect.InvocationTargetException
 
 /**
@@ -29,8 +26,7 @@ class PrivilegedOverrideInstrumentation : Instrumentation() {
     }
 
     init {
-        HiddenApiBypass.addHiddenApiExemptions("L")
-        HiddenApiBypass.addHiddenApiExemptions("I")
+        SystemServices.ensureHiddenApiAccess()
     }
 
     override fun onCreate(arguments: Bundle) {
@@ -42,6 +38,7 @@ class PrivilegedOverrideInstrumentation : Instrumentation() {
         val result = Bundle()
         val log = StringBuilder("\n--- RoamerPriv ---\n")
         var error: Throwable? = null
+        val failures = linkedMapOf<Int, String>()
         try {
             val action = arguments.getString("action")?.takeIf { it.isNotBlank() } ?: "set"
             val subIds = resolveSubIds(arguments)
@@ -52,7 +49,6 @@ class PrivilegedOverrideInstrumentation : Instrumentation() {
             val mgr = ctx.getSystemService(Context.CARRIER_CONFIG_SERVICE) as CarrierConfigManager
             log.append("action=$action subIds=${subIds.joinToString(",")}\n")
 
-            val failures = mutableListOf<Int>()
             withShellPermissionIdentity {
                 for (subId in subIds) {
                     try {
@@ -60,12 +56,13 @@ class PrivilegedOverrideInstrumentation : Instrumentation() {
                         runCatching { notifyConfigChanged(subId) }
                             .onFailure { log.append("notify failed (ignored subId=$subId): ${it.message}\n") }
                     } catch (t: Throwable) {
-                        failures += subId
-                        log.append("subId=$subId failed (continuing other SIMs): ${t.unwrap().message}\n")
-                        Log.e(TAG, "applyAction subId=$subId failed", t.unwrap())
+                        val cause = t.unwrap()
+                        failures[subId] = cause.message ?: cause.javaClass.simpleName
+                        log.append("subId=$subId failed (continuing other SIMs): ${cause.message}\n")
+                        Log.e(TAG, "applyAction subId=$subId failed", cause)
                     }
                 }
-                require(failures.size < subIds.size) { "all ${subIds.size} SIMs failed (subId=${failures.joinToString(",")})" }
+                require(failures.size < subIds.size) { "all ${subIds.size} SIMs failed (subId=${failures.keys.joinToString(",")})" }
             }
         } catch (t: Throwable) {
             error = t.unwrap()
@@ -81,7 +78,17 @@ class PrivilegedOverrideInstrumentation : Instrumentation() {
         }
         Log.i(TAG, log.toString())
         result.putString("stream", log.toString())
-        finish(if (error == null) 0 else 1, result)
+        val outcome = InstrumentationOutcome(
+            ok = error == null,
+            error = error?.let { it.message ?: it.javaClass.simpleName },
+            failures = failures,
+        )
+        // Report only after finish(), so a follow-up run never starts while this one is still registered.
+        try {
+            finish(if (error == null) 0 else 1, result)
+        } finally {
+            InstrumentationTrigger.report(arguments.getString(InstrumentationTrigger.EXTRA_TOKEN), outcome)
+        }
     }
 
     private fun applyAction(
@@ -107,31 +114,39 @@ class PrivilegedOverrideInstrumentation : Instrumentation() {
                 log.append("SET subId=$subId OK\n")
             }
 
-            "restore" -> {
-                val realIso = MccUtil.countryFromMcc(readMccMnc(ctx, subId))
-                if (realIso.isBlank()) {
-                    overrideConfig(mgr, subId, null)
-                    log.append("RESTORE subId=$subId OK(clear only, cannot derive real iso)\n")
-                } else {
-                    val bundle = PersistableBundle().apply { putString(KEY_ISO, realIso) }
-                    overrideConfig(mgr, subId, bundle)
-                    runCatching { notifyConfigChanged(subId) }
-                    val settled = pollEffectiveIso(ctx, subId, realIso, 3000L)
-                    if (settled) {
-                        overrideConfig(mgr, subId, null)
-                        log.append("RESTORE subId=$subId OK(clean)-> iso='$realIso'\n")
-                    } else {
-                        log.append("RESTORE subId=$subId OK(writeback retained, layer not yet cleared)-> iso='$realIso'\n")
-                    }
-                }
-            }
-
-            "clear" -> {
-                overrideConfig(mgr, subId, null)
-                log.append("CLEAR(all) subId=$subId OK\n")
-            }
+            "restore", "clear" -> revert(subId, mgr, ctx, log, force = action == "clear")
 
             else -> throw IllegalArgumentException("unknown action=$action")
+        }
+    }
+
+    /**
+     * Writes the real ISO and carrier name back, then clears the override layer. Clearing alone
+     * leaves the last overridden values in place. With [force] the layer is cleared even when the
+     * write-back has not settled; otherwise the write-back is kept so it can still take effect.
+     */
+    private fun revert(subId: Int, mgr: CarrierConfigManager, ctx: Context, log: StringBuilder, force: Boolean) {
+        val tag = if (force) "CLEAR" else "RESTORE"
+        val realIso = MccUtil.countryFromMcc(readMccMnc(ctx, subId))
+        val realName = readCarrierIdName(ctx, subId)
+        if (realIso.isBlank()) {
+            overrideConfig(mgr, subId, null)
+            log.append("$tag subId=$subId OK(clear only, cannot derive real iso)\n")
+            return
+        }
+        val bundle = PersistableBundle().apply { putString(KEY_ISO, realIso) }
+        if (realName.isNotBlank()) {
+            bundle.putBoolean(KEY_NAME_BOOL, true)
+            bundle.putString(KEY_NAME, realName)
+        }
+        overrideConfig(mgr, subId, bundle)
+        runCatching { notifyConfigChanged(subId) }
+        val settled = pollEffectiveIso(ctx, subId, realIso, 3000L)
+        if (settled || force) {
+            overrideConfig(mgr, subId, null)
+            log.append("$tag subId=$subId OK(clean, settled=$settled)-> iso='$realIso' name='$realName'\n")
+        } else {
+            log.append("$tag subId=$subId OK(writeback retained, layer not yet cleared)-> iso='$realIso' name='$realName'\n")
         }
     }
 
@@ -155,14 +170,8 @@ class PrivilegedOverrideInstrumentation : Instrumentation() {
         }
     }
 
-    private fun activityManager(): Any {
-        val binder = Class.forName("android.os.ServiceManager")
-            .getMethod("getService", String::class.java)
-            .invoke(null, Context.ACTIVITY_SERVICE) as IBinder
-        return Class.forName("android.app.IActivityManager\$Stub")
-            .getMethod("asInterface", IBinder::class.java)
-            .invoke(null, ShizukuBinderWrapper(binder))!!
-    }
+    private fun activityManager(): Any =
+        SystemServices.shizukuInterface(Context.ACTIVITY_SERVICE, "android.app.IActivityManager")
 
     private fun pollEffectiveIso(ctx: Context, subId: Int, wantLower: String, timeoutMs: Long): Boolean {
         val tm = (ctx.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager)
@@ -200,12 +209,10 @@ class PrivilegedOverrideInstrumentation : Instrumentation() {
     }
 
     private fun notifyConfigChanged(subId: Int) {
-        val binder = Class.forName("android.os.ServiceManager")
-            .getMethod("getService", String::class.java)
-            .invoke(null, Context.CARRIER_CONFIG_SERVICE) as IBinder
-        val loader = Class.forName("com.android.internal.telephony.ICarrierConfigLoader\$Stub")
-            .getMethod("asInterface", IBinder::class.java)
-            .invoke(null, ShizukuBinderWrapper(binder))
+        val loader = SystemServices.shizukuInterface(
+            Context.CARRIER_CONFIG_SERVICE,
+            "com.android.internal.telephony.ICarrierConfigLoader",
+        )
         loader.javaClass.getMethod("notifyConfigChangedForSubId", Int::class.javaPrimitiveType)
             .invoke(loader, subId)
     }
@@ -213,6 +220,11 @@ class PrivilegedOverrideInstrumentation : Instrumentation() {
     private fun readMccMnc(ctx: Context, subId: Int): String = runCatching {
         (ctx.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager)
             .createForSubscriptionId(subId).simOperator.orEmpty()
+    }.getOrDefault("")
+
+    private fun readCarrierIdName(ctx: Context, subId: Int): String = runCatching {
+        (ctx.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager)
+            .createForSubscriptionId(subId).simCarrierIdName?.toString().orEmpty()
     }.getOrDefault("")
 
     private fun resolveSubIds(arguments: Bundle): List<Int> {
