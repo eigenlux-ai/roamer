@@ -15,7 +15,7 @@ android {
         applicationId = "com.eigenlux.roamer"
         minSdk = 31
         targetSdk = 36
-        // CI (release workflow) derives these from the git tag; local builds fall back to 1 / "1.0".
+        // CI (release workflow) derives these from the git tag; local builds fall back to 1 / "1.0.0".
         versionCode = System.getenv("VERSION_CODE")?.toIntOrNull() ?: 1
         versionName = System.getenv("VERSION_NAME") ?: "1.0.0"
 
@@ -36,6 +36,10 @@ android {
     }
 
     buildTypes {
+        debug {
+            // Lets a debug build install next to a release-signed one on the same device.
+            applicationIdSuffix = ".debug"
+        }
         release {
             optimization {
                 enable = false
