@@ -28,8 +28,8 @@
     <string name="log_ready">Ready.</string>
     <string name="no_active_sim">No active SIM found (or not refreshed yet).</string>
     <string name="nothing_to_restore">No overridden SIMs to restore.</string>
-    <string name="no_sim_to_mask">No active SIM found; cannot mask.</string>
-    <string name="already_masked">Every SIM\'s region is already %1$s; no need to mask.</string>
+    <string name="no_sim_to_mask">No active SIM found; nothing to override.</string>
+    <string name="already_masked">Every SIM\'s region is already %1$s; nothing to override.</string>
 
     <!-- ===== Shizuku banner ===== -->
     <string name="shizuku_authorized">Shizuku authorized</string>

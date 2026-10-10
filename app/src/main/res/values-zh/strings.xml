@@ -28,8 +28,8 @@
     <string name="log_ready">就绪。</string>
     <string name="no_active_sim">未发现活跃 SIM(或未刷新)。</string>
     <string name="nothing_to_restore">没有已覆写的卡,无需还原。</string>
-    <string name="no_sim_to_mask">未发现活跃 SIM,无法伪装。</string>
-    <string name="already_masked">所有卡的归属地已是 %1$s,无需伪装。</string>
+    <string name="no_sim_to_mask">未发现活跃 SIM,无法覆写。</string>
+    <string name="already_masked">所有卡的归属地已是 %1$s,无需覆写。</string>
 
     <!-- ===== Shizuku 横幅 ===== -->
     <string name="shizuku_authorized">Shizuku 已授权</string>

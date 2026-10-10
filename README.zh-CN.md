@@ -1,6 +1,6 @@
 # Roamer
 
-Roamer 是一款无需 root 的 Android 开发者工具，用于修改 SIM 卡汇报的国家代码（ISO）与运营商名称，并支持将伪装的归属地同步到特定应用的语言/区域设置（Per-app locale），方便开发者在单台设备上调试多国及多运营商逻辑。
+Roamer 是一款无需 root 的 Android 开发者工具，用于修改 SIM 卡汇报的国家代码（ISO）与运营商名称，并支持将覆写后的归属地同步到特定应用的语言/区域设置（Per-app locale），方便开发者在单台设备上调试多国及多运营商逻辑。
 
 [English](README.md) · **简体中文**
 
@@ -8,24 +8,25 @@ Roamer 是一款无需 root 的 Android 开发者工具，用于修改 SIM 卡�
 
 ## 项目简介
 
-Roamer 通过 [Shizuku](https://shizuku.rikka.app/) 调用系统 Telephony API 暴露的 CarrierConfig 覆盖层，使应用读取到指定的 SIM 卡归属地和运营商名称，无需更换实体 SIM 卡。
+Roamer 通过 [Shizuku](https://shizuku.rikka.app/) 调用系统 Telephony API 暴露的 CarrierConfig 覆写层，使应用读取到指定的 SIM 卡归属地和运营商名称，无需更换实体 SIM 卡。
 
-同时，Roamer 支持按应用设置区域覆盖（Android 13+）：选中的应用将跟随主 SIM 卡当前伪装的国家代码（例如伪装为日本时应用自动使用 `ja-JP` 区域设置）。当 SIM 还原或功能关闭时，应用会自动恢复至初始的区域设置。
+同时，Roamer 支持按应用设置区域覆写（Android 13+）：选中的应用将跟随主 SIM 卡当前覆写的国家代码（例如覆写为日本时应用自动使用 `ja-JP` 区域设置）。当 SIM 还原或功能关闭时，应用会自动恢复至初始的区域设置。
 
 ## 主要功能
 
-- 无需 Root：通过 Shizuku 覆盖 SIM 卡国家 ISO 及运营商名称。
+- 无需 Root：通过 Shizuku 覆写 SIM 卡国家 ISO 及运营商名称。
 - 多卡支持：支持多 SIM 卡独立配置或一键批量应用/还原。快速切换会把所有卡切到同一地区，真实归属地就是该地区的卡则直接还原。
-- 国家/地区与运营商可配置：内置常用国家与地区的预设，可在设置中添加任意国家或地区、编辑其运营商列表，并选择哪些地区出现在首页的快速切换中。配置支持导出、导入和还原默认。
+- 国家/地区与运营商可配置：内置全部 ISO 3166-1 国家与地区，每个都带预置的运营商列表。可在设置中决定哪些地区出现在菜单里及其顺序，启用或停用预置运营商，添加自定义的国家/地区和运营商，并选择哪些地区出现在首页的快速切换中。修改在保存后才生效，配置支持导出、导入和还原默认。
+- 运营商数据有出处：预置运营商按用户数排序，来源与各市场的核实状态见 [`docs/CARRIER_DATA.md`](docs/CARRIER_DATA.md)，其中一部分市场的顺序尚未核实。
 - 无快照还原：在运行时根据 MCC 实时重导真实值并回写，无需保存历史快照。
-- 强制清除：回写真实值并清除所有卡的覆盖层，用于“还原”无法处理的卡。
+- 强制清除：回写真实值并清除所有卡的覆写层，用于“还原”无法处理的卡。
 - 提权执行的失败原因会按卡显示在应用内日志中。
-- 应用级区域同步：可选择特定应用跟随 SIM 伪装区域。
+- 应用级区域同步：可选择特定应用跟随 SIM 覆写后的区域。
 - 调试友好：Liquid Glass 风格界面，原值与当前值对比展示，技术参数（MCC/MNC/ISO/subId）采用等宽字体显示，支持浅色/深色主题。
 
-## 覆盖能力与边界
+## 覆写能力与边界
 
-Roamer 仅修改 CarrierConfig 的覆盖层，不修改底层 SIM 卡或 RIL 硬件信息。
+Roamer 仅修改 CarrierConfig 的覆写层，不修改底层 SIM 卡或 RIL 硬件信息。
 
 | 目标属性 | 是否可覆写 | Telephony API |
 | --- | --- | --- |
@@ -34,7 +35,7 @@ Roamer 仅修改 CarrierConfig 的覆盖层，不修改底层 SIM 卡或 RIL 硬
 | MCC / MNC 数字 | 否 | `getSimOperator` (SELinux 保护) |
 | 在网注册信息 | 否 | `getNetworkOperator` / `getNetworkCountryIso` |
 
-由于 MNC 和网络注册信息无法覆盖，Roamer 不会修改真实手机号码或基站连接信息。应用能否被正确伪装取决于其内部读取的是哪个 Telephony API 或位置服务。
+由于 MNC 和网络注册信息无法覆写，Roamer 不会修改真实手机号码或基站连接信息。应用能否读到覆写后的值，取决于其内部读取的是哪个 Telephony API 或位置服务。
 
 ## 环境要求
 
@@ -57,12 +58,12 @@ Roamer 的解决路径：
 ### 无快照还原
 
 Roamer 不依赖本地保存的初始状态快照。在执行还原时：
-- 真实国家 ISO 通过不可变 MCC (`getSimOperator`) 重新派生。还原过程先回写真实 ISO 以更新订阅数据库，随后执行 `overrideConfig(null)` 清理覆盖层。
-- 仅清理覆盖层并不能可靠地恢复运营商名称（部分 SIM 会继续汇报被覆盖的名称），因此还原时会在清理前一并回写运营商 ID 对应的名称（`getSimCarrierIdName`）。
+- 真实国家 ISO 通过不可变 MCC (`getSimOperator`) 重新派生。还原过程先回写真实 ISO 以更新订阅数据库，随后执行 `overrideConfig(null)` 清理覆写层。
+- 仅清理覆写层并不能可靠地恢复运营商名称（部分 SIM 会继续汇报被覆写的名称），因此还原时会在清理前一并回写运营商 ID 对应的名称（`getSimCarrierIdName`）。
 
 ### 强制清除
 
-“还原”只处理被识别为已覆盖的卡，判断依据是 MCC 派生的 ISO 与当前生效的 ISO 是否一致。强制清除对所有卡执行同样的回写，随后无条件清理覆盖层，即使回写尚未生效。
+“还原”只处理被识别为已覆写的卡，判断依据是 MCC 派生的 ISO 与当前生效的 ISO 是否一致。强制清除对所有卡执行同样的回写，随后无条件清理覆写层，即使回写尚未生效。
 
 ### 结果回传
 
@@ -99,6 +100,7 @@ com.eigenlux.roamer/
 ├── ui/     # 玻璃材质、通用控件与主题
 ├── MainActivity.kt
 ├── MainViewModel.kt
+├── SettingsScreen.kt
 └── AppPickerScreen.kt
 ```
 
@@ -109,7 +111,7 @@ com.eigenlux.roamer/
 ## 已知限制
 
 - 提权路径主要针对三星设备上 Shell UID 的限制逻辑进行适配，其他厂商设备为 Best-effort 支持。
-- 还原后的运营商名称取自运营商 ID 对应的名称，可能与覆盖前 SIM 汇报的名称不同。
+- 还原后的运营商名称取自运营商 ID 对应的名称，可能与覆写前 SIM 汇报的名称不同。
 - 若在操作过程中 SIM 卡断开连接（如飞行模式），底层 Telephony 状态更新可能会有延迟。
 
 ## 开源协议
@@ -118,6 +120,6 @@ com.eigenlux.roamer/
 
 ## 致谢
 
-参考了以下开源项目在无 Root 下通过 Shizuku 覆盖 CarrierConfig 的探索：
+参考了以下开源项目在无 Root 下通过 Shizuku 覆写 CarrierConfig 的探索：
 - [Ackites/Nrfr](https://github.com/Ackites/Nrfr)
 - [lmh-codes/Nrfr](https://github.com/lmh-codes/Nrfr)

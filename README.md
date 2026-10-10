@@ -16,7 +16,8 @@ Optionally, Roamer can mirror the primary SIM's overridden country code to selec
 
 - Rootless SIM country ISO and carrier name override via Shizuku.
 - Multi-SIM support: apply or restore settings across all active slots. Quick switch moves every SIM to one region and restores a SIM whose real country is that region.
-- Configurable regions and carriers: start from presets for popular regions, then add any country or region, edit its carrier list, and choose which regions appear in the quick-switch row. The configuration can be exported, imported, and reset to defaults.
+- Configurable regions and carriers: every ISO 3166-1 country and region is built in with a preset carrier list. In Settings you choose which regions appear in the menu and in what order, turn preset carriers on or off, add custom regions and carriers, and pick the regions for the quick-switch row. Edits take effect when saved, and the configuration can be exported, imported, and reset to defaults.
+- Sourced carrier data: preset carriers are ordered by subscriber count. Sources and the verification status of each market are in [`docs/CARRIER_DATA.md`](docs/CARRIER_DATA.md); the order is still unverified for some markets.
 - Reversible restore: values are derived dynamically at runtime rather than saved to disk.
 - Force clear: writes back the real values and clears every SIM's override layer, for SIMs that restore cannot target.
 - Failure reasons from the privileged run are reported in the in-app log, per SIM.
@@ -99,6 +100,7 @@ com.eigenlux.roamer/
 ├── ui/     # Glass material, shared controls, and theme
 ├── MainActivity.kt
 ├── MainViewModel.kt
+├── SettingsScreen.kt
 └── AppPickerScreen.kt
 ```
 
