@@ -27,6 +27,12 @@ Roamer does not persist pre-override snapshots. Values are re-derived at runtime
 ### Multi-SIM Batching
 Multiple SIM slots are processed within a single instrumentation run and single shell delegation context. Triggering individual delegations concurrently can cause early permission drops (`stopDelegateShellPermissionIdentity`), failing secondary SIM restores.
 
+### User-Configured Regions
+The countries, their carriers, and the quick-switch row are user data (`data/RegionConfig.kt`, edited under Settings). `CountryPresets` and `CarrierPresets` are only the defaults and the source of curated names and locales. The main screen must read `MainViewModel.regions` / `quickSwitch`, never the presets directly. Settings pages edit a draft (`regionsDraft` in the view model, local state on the carrier and quick-switch pages) and only write through on Save. Regions and carriers follow different rules. **Regions**: every ISO 3166-1 code plus the presets is built in; any of them can be put into or taken out of the user's list (a region taken out is kept with `enabled = false`, so its carriers survive). A custom region (`CustomRegion`) is one the user defined for a code the app does not know; it carries the Custom tag and can be deleted for good from the Add page. **Carriers**: a region's preset carriers can never be removed, only turned off; carriers the user added carry the Custom tag and can be removed. A region with no enabled carrier is overridden by ISO alone. For a region outside the presets the per-app locale comes from ICU's likely subtags.
+
+### Configuration Export and Import
+`ConfigCodec` writes the regions, custom regions, and quick-switch selection as versioned JSON (`format: roamer-config`, `version: 1`). Import replaces the configuration, drops invalid entries, and normalizes the rest like stored data. Theme and enrolled apps are per-device state and are not part of it. Bump the version and keep reading the old one when the shape changes.
+
 ### In-Process Result Channel
 The instrumentation attaches to the running app process, so it reports its outcome (overall error and per-subId failures) through `InstrumentationTrigger.report`. `CarrierConfigController` surfaces that error directly and only polls telephony state for SIMs the run did not report as failed. If no outcome arrives, it falls back to polling alone.
 
@@ -51,13 +57,20 @@ com.eigenlux.roamer/
 ├── data/   # Presets and persistent app settings
 │   ├── CountryPresets.kt
 │   ├── CarrierPresets.kt
+│   ├── RegionConfig.kt
+│   ├── ConfigCodec.kt
+│   ├── OpenSourceLicenses.kt   # shown on the About page; keep in step with the dependencies
 │   └── AppLocaleStore.kt
 ├── ui/     # Glass material, shared controls, and theme
 │   ├── Glass.kt
 │   ├── Controls.kt
+│   ├── ScreenStack.kt
+│   ├── GroupedList.kt
+│   ├── Icons.kt
 │   └── theme/ (Color, Theme, Type, Shape, ThemeMode)
 ├── MainActivity.kt
 ├── MainViewModel.kt
+├── SettingsScreen.kt
 └── AppPickerScreen.kt
 ```
 
@@ -81,3 +94,4 @@ export JAVA_HOME=~/.local/share/mise/installs/java/temurin-21
 - English runs much longer than Chinese. Check any layout change in both languages; the rules are in `docs/DESIGN.md` under "Layout across languages".
 - Any modifications or additions to UI strings must update both files. The `StringsParityTest` JVM unit test verifies key parity between string tables.
 - Data structures in `CarrierPresets.kt` contain non-translated brand strings.
+- `CarrierPresets.kt` covers every ISO region, ordered by subscriber count. Its sources and the markets whose order is unverified are recorded in `docs/CARRIER_DATA.md`; keep the two in sync and never reorder from memory.

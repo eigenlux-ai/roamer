@@ -73,7 +73,8 @@ Glass is built from three parts, following the iOS 27 revision of Liquid Glass:
 | Element | Treatment |
 | --- | --- |
 | Toolbar | Transparent at the top of the list. Becomes uniform glass across the full width once content scrolls beneath it. |
-| Toolbar buttons | Bare icons in the amber accent, with no container. |
+| Toolbar title | Centered, 17sp semibold. A page's back chevron or the main screen's Settings icon sits on the left, actions on the right. |
+| Toolbar buttons | Bare icons with no container. Actions (refresh) use the amber accent; navigation (back, settings) uses the neutral text color. |
 | Restore all bar | Glass bar with a `16dp` radius that springs in from the bottom while a SIM is overridden. |
 | Result message | Glass pill above the bottom edge. Skipped when the log section is already on screen. |
 
@@ -114,20 +115,31 @@ All controls follow one language. Material components with a recognizable Materi
 | Primary button | Rounded rectangle filled with the bright amber, dark text. |
 | Soft button | Flat rounded rectangle with a soft fill, for secondary actions and chips. |
 | Plain button | Text in the amber accent, no container. |
-| Toolbar icon button | Bare icon in the amber accent. |
+| Toolbar icon button | Bare icon; amber for actions, neutral for navigation. |
 | Toggle switch | Compact `46×28dp` track with a round thumb; green when on. |
 | Segmented control | Rounded track with a thumb that slides to the selection. |
 | Menu row | Label on the left, current value and a chevron on the right; opens a menu with a check mark on the current choice. |
 | Check circle | Filled check when selected, empty ring otherwise. |
+| Group row | Row of an inset grouped list (`ui/GroupedList.kt`): solid surface, `20dp` corners on the first and last row, hairline between rows. |
+| Editable row | Group row with a drag handle behind while its list is in edit mode. An entry that can be removed shows a red minus button in front; a preset carrier shows a toggle instead. Adding uses a green plus button. |
+| Tag | Small neutral label beside a row title. "Custom" marks every region or carrier the user defined. A carrier that is turned off is dimmed and labeled "Off". |
 
 Every tappable control keeps a touch target of at least 48dp.
+
+### Settings pages
+Settings pages share one layout: the ground, a scrolling grouped list, and the toolbar with a back chevron and a centered title. A list that can be edited puts **Edit** in the toolbar; outside edit mode a row navigates, inside it rows can be added, removed, and dragged into order.
+
+Edits are a draft and do not take effect until saved. In edit mode the toolbar shows **Done** while nothing has changed. Once the draft differs from the saved list, it shows **Revert** (neutral color, drops the changes and stays in edit mode) and **Save** (accent color, applies them and leaves edit mode). Leaving the page drops an unsaved draft. A dragged row follows the finger, its neighbors slide aside, and the list scrolls when the row is held near an edge.
+
+### Confirmation
+Only an action that cannot be undone asks for confirmation, in an alert with two equal buttons: a neutral Cancel and a red confirming button. Its row in the list is labeled in the same red. Resetting the configuration is the one such action today.
 
 ## 7. Motion and Feedback
 
 - **No ripple.** Buttons scale down slightly and dim while pressed; rows show a flat highlight.
 - Position changes use springs: the switch thumb, the segmented thumb, the Restore all bar, and press scale.
 - Values that an override or restore changes crossfade in place.
-- Screens move with a short horizontal slide and fade. System Back always returns from the app picker.
+- Pages stack over the main screen (`ui/ScreenStack.kt`): a page slides in from the right, and the system Back gesture drags it along with the finger, revealing the main screen beneath with a slight parallax and dim. Releasing completes the return or settles the page back. The Back button and the toolbar's back chevron play the same motion.
 - A completed operation gives a confirm or reject haptic.
 - The progress indicator is a 2dp line on the bottom edge of the toolbar; it never shifts the content.
 
