@@ -1,23 +1,28 @@
 package com.eigenlux.roamer.ui.theme
 
 import android.os.Build
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.LocalRippleConfiguration
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
+import com.eigenlux.roamer.ui.PressHighlight
 
 private val LightColorScheme = lightColorScheme(
-    primary = HarborPrimaryLight,
-    onPrimary = HarborOnPrimaryLight,
-    primaryContainer = HarborContainerLight,
-    onPrimaryContainer = HarborOnContainerLight,
+    primary = BrassLight,
+    onPrimary = BrassOnLight,
+    primaryContainer = BrassFillLight,
+    onPrimaryContainer = BrassOnFill,
     secondary = SlateLight,
     onSecondary = SlateOnLight,
     secondaryContainer = SlateContainerLight,
@@ -34,6 +39,17 @@ private val LightColorScheme = lightColorScheme(
     onSurfaceVariant = OnSurfaceVariantLight,
     outline = OutlineLight,
     outlineVariant = OutlineVariantLight,
+    surfaceTint = BrassLight,
+    surfaceDim = SurfaceDimLight,
+    surfaceBright = SurfaceBrightLight,
+    surfaceContainerLowest = SurfaceContainerLowestLight,
+    surfaceContainerLow = SurfaceContainerLowLight,
+    surfaceContainer = SurfaceContainerLight,
+    surfaceContainerHigh = SurfaceContainerHighLight,
+    surfaceContainerHighest = SurfaceContainerHighestLight,
+    inverseSurface = InverseSurfaceLight,
+    inverseOnSurface = InverseOnSurfaceLight,
+    inversePrimary = BrassDark,
     error = ErrorLight,
     onError = OnErrorLight,
     errorContainer = ErrorContainerLight,
@@ -41,10 +57,10 @@ private val LightColorScheme = lightColorScheme(
 )
 
 private val DarkColorScheme = darkColorScheme(
-    primary = HarborPrimaryDark,
-    onPrimary = HarborOnPrimaryDark,
-    primaryContainer = HarborContainerDark,
-    onPrimaryContainer = HarborOnContainerDark,
+    primary = BrassDark,
+    onPrimary = BrassOnDark,
+    primaryContainer = BrassFillDark,
+    onPrimaryContainer = BrassOnFill,
     secondary = SlateDark,
     onSecondary = SlateOnDark,
     secondaryContainer = SlateContainerDark,
@@ -61,6 +77,17 @@ private val DarkColorScheme = darkColorScheme(
     onSurfaceVariant = OnSurfaceVariantDark,
     outline = OutlineDark,
     outlineVariant = OutlineVariantDark,
+    surfaceTint = BrassDark,
+    surfaceDim = SurfaceDimDark,
+    surfaceBright = SurfaceBrightDark,
+    surfaceContainerLowest = SurfaceContainerLowestDark,
+    surfaceContainerLow = SurfaceContainerLowDark,
+    surfaceContainer = SurfaceContainerDark,
+    surfaceContainerHigh = SurfaceContainerHighDark,
+    surfaceContainerHighest = SurfaceContainerHighestDark,
+    inverseSurface = InverseSurfaceDark,
+    inverseOnSurface = InverseOnSurfaceDark,
+    inversePrimary = BrassLight,
     error = ErrorDark,
     onError = OnErrorDark,
     errorContainer = ErrorContainerDark,
@@ -70,6 +97,7 @@ private val DarkColorScheme = darkColorScheme(
 /**
  * Main application theme wrapper.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RoamerTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
@@ -90,8 +118,14 @@ fun RoamerTheme(
         colorScheme = colorScheme,
         typography = Typography,
         shapes = RoamerShapes,
-        content = content,
-    )
+    ) {
+        // Press feedback is a flat highlight or a scale, never the Material ripple.
+        CompositionLocalProvider(
+            LocalRippleConfiguration provides null,
+            LocalIndication provides PressHighlight,
+            content = content,
+        )
+    }
 }
 
 /**
@@ -99,4 +133,32 @@ fun RoamerTheme(
  */
 val successColor: Color
     @Composable @ReadOnlyComposable
-    get() = if (MaterialTheme.colorScheme.surface.luminance() < 0.5f) SuccessDark else SuccessLight
+    get() = if (isDarkScheme) SuccessDark else SuccessLight
+
+/**
+ * Theme-aware container color for success messages.
+ */
+val successContainerColor: Color
+    @Composable @ReadOnlyComposable
+    get() = if (isDarkScheme) SuccessContainerDark else SuccessContainerLight
+
+/**
+ * Theme-aware content color on [successContainerColor].
+ */
+val onSuccessContainerColor: Color
+    @Composable @ReadOnlyComposable
+    get() = if (isDarkScheme) OnSuccessContainerDark else OnSuccessContainerLight
+
+/**
+ * Harbor blue of the ambient ground glow.
+ */
+val ambientColor: Color
+    @Composable @ReadOnlyComposable
+    get() = if (isDarkScheme) HarborPrimaryDark else HarborPrimaryLight
+
+/**
+ * True when the active color scheme is the dark one.
+ */
+val isDarkScheme: Boolean
+    @Composable @ReadOnlyComposable
+    get() = MaterialTheme.colorScheme.surface.luminance() < 0.5f

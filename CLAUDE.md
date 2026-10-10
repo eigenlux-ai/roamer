@@ -6,7 +6,8 @@ Roamer is a rootless Android tool (Kotlin + Jetpack Compose) for overriding a SI
 
 - **Application ID / Namespace**: `com.eigenlux.roamer` (debug builds add the `.debug` suffix so they install next to a release build)
 - **SDK Target**: `minSdk 31`, `targetSdk 36`, `compileSdk 36`
-- **Language & Stack**: Kotlin 2.2.10, Jetpack Compose, Shizuku 13.1.5, HiddenApiBypass 4.3
+- **Language & Stack**: Kotlin 2.2.10, Jetpack Compose, Shizuku 13.1.5, HiddenApiBypass 4.3, Haze 1.7.2 (backdrop blur; 1.7.3+ and 2.x need a newer Kotlin and Compose)
+- **Design**: `docs/DESIGN.md` is binding. The UI follows the iOS 27 Liquid Glass language; use the controls in `ui/Controls.kt` instead of Material's Switch, SegmentedButton, Checkbox, FilterChip, and filled/text buttons.
 
 ## Core Architectural Invariants
 
@@ -51,7 +52,9 @@ com.eigenlux.roamer/
 │   ├── CountryPresets.kt
 │   ├── CarrierPresets.kt
 │   └── AppLocaleStore.kt
-├── ui/     # Theme definition
+├── ui/     # Glass material, shared controls, and theme
+│   ├── Glass.kt
+│   ├── Controls.kt
 │   └── theme/ (Color, Theme, Type, Shape, ThemeMode)
 ├── MainActivity.kt
 ├── MainViewModel.kt

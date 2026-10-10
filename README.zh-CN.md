@@ -4,7 +4,7 @@ Roamer 是一款无需 root 的 Android 开发者工具，用于修改 SIM 卡�
 
 [English](README.md) · **简体中文**
 
-技术栈：Kotlin · Jetpack Compose · Material 3 · Shizuku · minSdk 31 (Android 12+)
+技术栈：Kotlin · Jetpack Compose · Shizuku · Haze · minSdk 31 (Android 12+)
 
 ## 项目简介
 
@@ -21,7 +21,7 @@ Roamer 通过 [Shizuku](https://shizuku.rikka.app/) 调用系统 Telephony API �
 - 强制清除：回写真实值并清除所有卡的覆盖层，用于“还原”无法处理的卡。
 - 提权执行的失败原因会按卡显示在应用内日志中。
 - 应用级区域同步：可选择特定应用跟随 SIM 伪装区域。
-- 调试友好：原值与当前值对比展示，技术参数（MCC/MNC/ISO/subId）采用等宽字体显示，支持浅色/深色主题。
+- 调试友好：Liquid Glass 风格界面，原值与当前值对比展示，技术参数（MCC/MNC/ISO/subId）采用等宽字体显示，支持浅色/深色主题。
 
 ## 覆盖能力与边界
 
@@ -96,7 +96,7 @@ com.eigenlux.roamer/
 │   ├── RegionLogic
 │   └── LocaleOverrideController
 ├── data/   # 预设数据与本地状态存储
-├── ui/     # Material 3 主题
+├── ui/     # 玻璃材质、通用控件与主题
 ├── MainActivity.kt
 ├── MainViewModel.kt
 └── AppPickerScreen.kt

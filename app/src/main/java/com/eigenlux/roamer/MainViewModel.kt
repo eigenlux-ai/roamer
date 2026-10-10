@@ -2,6 +2,7 @@ package com.eigenlux.roamer
 
 import android.app.Application
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
@@ -34,6 +35,10 @@ internal class MainViewModel(app: Application) : AndroidViewModel(app) {
         private set
     var log by mutableStateOf(LogState(LogLevel.INFO, app.getString(R.string.log_ready)))
         private set
+    /** Incremented for every new [log] entry, so the UI can announce each one exactly once. */
+    var logEvent by mutableIntStateOf(0)
+        private set
+    var announcedLogEvent = 0
     var busy by mutableStateOf(false)
         private set
     var refreshing by mutableStateOf(false)
@@ -119,7 +124,7 @@ internal class MainViewModel(app: Application) : AndroidViewModel(app) {
                     r.partial -> LogLevel.WARNING
                     else -> LogLevel.ERROR
                 }
-                log = LogState(level, r.output)
+                post(LogState(level, r.output))
                 loadAndSync()
             } finally {
                 busy = false
@@ -127,8 +132,11 @@ internal class MainViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    private fun info(message: String) {
-        log = LogState(LogLevel.INFO, message)
+    private fun info(message: String) = post(LogState(LogLevel.INFO, message))
+
+    private fun post(state: LogState) {
+        log = state
+        logEvent++
     }
 
     fun override(subId: Int, iso: String, name: String) =

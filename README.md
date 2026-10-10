@@ -4,7 +4,7 @@ Roamer is an Android developer tool for overriding a SIM card's reported home co
 
 **English** · [简体中文](README.zh-CN.md)
 
-Stack: Kotlin · Jetpack Compose · Material 3 · Shizuku · minSdk 31 (Android 12+)
+Stack: Kotlin · Jetpack Compose · Shizuku · Haze · minSdk 31 (Android 12+)
 
 ## Overview
 
@@ -21,7 +21,7 @@ Optionally, Roamer can mirror the primary SIM's overridden country code to selec
 - Force clear: writes back the real values and clears every SIM's override layer, for SIMs that restore cannot target.
 - Failure reasons from the privileged run are reported in the in-app log, per SIM.
 - Optional per-app region override for targeted app testing.
-- UI details: side-by-side display of original vs. active values, monospace technical codes (MCC/MNC/ISO/subId), and light/dark theme support.
+- UI details: a Liquid Glass interface with side-by-side original vs. active values, monospace technical codes (MCC/MNC/ISO/subId), and light/dark themes.
 
 ## Scope of Overrides
 
@@ -96,7 +96,7 @@ com.eigenlux.roamer/
 │   ├── RegionLogic
 │   └── LocaleOverrideController
 ├── data/   # Region/carrier presets and local app state storage
-├── ui/     # Material 3 theme
+├── ui/     # Glass material, shared controls, and theme
 ├── MainActivity.kt
 ├── MainViewModel.kt
 └── AppPickerScreen.kt

@@ -79,6 +79,8 @@ dependencies {
     implementation(libs.hiddenapibypass)
     // Android 12+ system splash screen (branded; consistent API across versions)
     implementation(libs.androidx.core.splashscreen)
+    // Backdrop blur for the glass control layer
+    implementation(libs.haze)
     testImplementation(libs.junit)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)

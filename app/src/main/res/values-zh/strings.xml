@@ -41,6 +41,7 @@
     <string name="value_current">当前值</string>
     <string name="field_country">国家/地区</string>
     <string name="field_carrier">运营商名</string>
+    <string name="field_select">选择</string>
     <string name="badge_overridden">已覆写</string>
     <string name="cd_overridden">已覆盖</string>
     <string name="badge_default_sub">主卡槽</string>

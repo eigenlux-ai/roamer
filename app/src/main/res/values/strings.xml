@@ -41,6 +41,7 @@
     <string name="value_current">Current</string>
     <string name="field_country">Country/Region</string>
     <string name="field_carrier">Carrier name</string>
+    <string name="field_select">Select</string>
     <string name="badge_overridden">Overridden</string>
     <string name="cd_overridden">Overridden</string>
     <string name="badge_default_sub">Primary</string>

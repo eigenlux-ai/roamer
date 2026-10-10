@@ -9,10 +9,10 @@ import androidx.compose.ui.unit.dp
  */
 val RoamerShapes = Shapes(
     extraSmall = RoundedCornerShape(8.dp),
-    small = RoundedCornerShape(8.dp),
-    medium = RoundedCornerShape(12.dp),
-    large = RoundedCornerShape(16.dp),
-    extraLarge = RoundedCornerShape(16.dp),
+    small = RoundedCornerShape(10.dp),
+    medium = RoundedCornerShape(14.dp),
+    large = RoundedCornerShape(22.dp),
+    extraLarge = RoundedCornerShape(26.dp),
 )
 
 /**
