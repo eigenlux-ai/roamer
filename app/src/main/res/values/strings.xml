@@ -3,7 +3,7 @@
     <string name="app_name">Roamer</string>
 
     <!-- ===== Top bar / sections ===== -->
-    <string name="cd_refresh_all">Refresh all</string>
+    <string name="cd_refresh_all">Refresh all info</string>
     <string name="section_quick_switch">Quick switch</string>
     <string name="section_sim_details">SIM details</string>
     <string name="section_region_override">Region override</string>
@@ -20,20 +20,20 @@
     <string name="restore_all">Restore all</string>
     <string name="restore_all_count">Restore all (%1$d)</string>
     <string name="action_force_clear">Force clear</string>
-    <string name="force_clear_hint">Writes back the real values and clears every SIM\'s override layer. Use it when Restore is unavailable but the carrier name or region still looks wrong.</string>
+    <string name="force_clear_hint">Writes back the real values and clears the override layer of every SIM. Use it when Restore is unavailable but the carrier name or region is still wrong.</string>
 
     <!-- ===== Empty / status messages ===== -->
     <string name="log_ready">Ready.</string>
     <string name="no_active_sim">No active SIM found (or not refreshed yet).</string>
-    <string name="nothing_to_restore">No overridden SIM; nothing to restore.</string>
+    <string name="nothing_to_restore">No overridden SIMs to restore.</string>
     <string name="no_sim_to_mask">No active SIM found; cannot mask.</string>
-    <string name="already_masked">All SIMs are already in %1$s; no masking needed.</string>
+    <string name="already_masked">Every SIM\'s region is already %1$s; no need to mask.</string>
 
     <!-- ===== Shizuku banner ===== -->
     <string name="shizuku_authorized">Shizuku authorized</string>
-    <string name="shizuku_not_running">Shizuku not running; start it first</string>
+    <string name="shizuku_not_running">Shizuku is not running. Start it first.</string>
     <string name="shizuku_not_authorized">Shizuku not authorized</string>
-    <string name="action_grant">Grant</string>
+    <string name="action_grant">Request</string>
 
     <!-- ===== SIM card ===== -->
     <string name="slot_label">Slot %1$d</string>
@@ -52,23 +52,23 @@
     <!-- ===== Log chip level labels ===== -->
     <string name="log_level_success">Success</string>
     <string name="log_level_error">Failed</string>
-    <string name="log_level_partial">Partial</string>
+    <string name="log_level_partial">Partial success</string>
     <string name="log_level_info">Info</string>
 
     <!-- ===== Controller result messages ===== -->
-    <string name="err_shizuku_unavailable">Shizuku not authorized or not running</string>
-    <string name="err_no_target_sim">No target SIM slot</string>
+    <string name="err_shizuku_unavailable">Shizuku is not authorized or not running</string>
+    <string name="err_no_target_sim">No target slot</string>
     <!-- Operation nouns, substituted as %1$s into the result templates below. -->
     <string name="op_override">Override</string>
     <string name="op_restore">Restore</string>
     <string name="op_clear">Force clear</string>
     <string name="result_single_success">%1$s succeeded (%2$s)</string>
     <string name="result_single_timeout">%1$s did not take effect within %2$dms (%3$s; see logcat RoamerPriv)</string>
-    <string name="result_all_success">%1$s: all %2$d SIMs succeeded (%3$s)</string>
-    <string name="result_all_fail">%1$s failed: 0/%2$d effective (%3$s; see logcat RoamerPriv)</string>
-    <string name="result_partial">%1$s partial: %2$d/%3$d effective, subId=%4$s not effective (see logcat RoamerPriv)</string>
+    <string name="result_all_success">%1$s succeeded for all %2$d SIMs (%3$s)</string>
+    <string name="result_all_fail">%1$s failed: 0/%2$d took effect (%3$s; see logcat RoamerPriv)</string>
+    <string name="result_partial">%1$s partially succeeded: %2$d/%3$d took effect; subId=%4$s did not (see logcat RoamerPriv)</string>
     <string name="result_fail">%1$s failed: %2$s</string>
-    <string name="detail_iso_restored">iso restored to real value</string>
+    <string name="detail_iso_restored">ISO restored to the real value</string>
     <string name="detail_layer_cleared">override layer cleared</string>
 
     <!-- ===== Country names ===== -->
@@ -103,11 +103,11 @@
     <string name="country_nz">New Zealand</string>
 
     <!-- ===== Region override (phase-2) ===== -->
-    <string name="region_follow_primary">Follow primary slot to override app region</string>
-    <string name="region_follow_hint">Re-applied when Roamer runs a SIM op or refreshes — not a background service.</string>
+    <string name="region_follow_primary">Make app region follow the primary slot</string>
+    <string name="region_follow_hint">Reapplied when Roamer runs a SIM operation or refreshes; it is not a background service.</string>
     <string name="region_selected_apps">Selected apps</string>
     <string name="region_selected_count">%1$d selected</string>
-    <string name="region_honesty">Many apps derive region from IP / GPS / account, not locale — whether an app is affected depends on which source it reads.</string>
+    <string name="region_honesty">Many apps determine region from IP, GPS, or account rather than locale, so whether this takes effect depends on which source the app reads.</string>
     <!-- App picker subpage -->
     <string name="app_picker_title">Select apps</string>
     <string name="app_picker_search">Search apps</string>
