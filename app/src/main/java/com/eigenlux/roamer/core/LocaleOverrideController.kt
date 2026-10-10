@@ -1,6 +1,7 @@
 package com.eigenlux.roamer.core
 
 import android.content.Context
+import android.icu.util.ULocale
 import android.os.LocaleList
 import android.os.Process
 import android.util.Log
@@ -73,6 +74,20 @@ object LocaleOverrideController {
     private val lock = Any()
 
     /**
+     * Locale for [country]: the preset's, or for a region the user added, its most likely
+     * language according to ICU (for example `eg` gives `ar-EG`).
+     */
+    private fun localeFor(country: String): String? {
+        RegionLogic.deriveLocale(country)?.let { return it }
+        val region = country.uppercase(java.util.Locale.ROOT)
+        return runCatching {
+            ULocale.addLikelySubtags(ULocale("und", region)).language
+                .takeIf { it.isNotEmpty() && it != "und" }
+                ?.let { "$it-$region" }
+        }.getOrNull()
+    }
+
+    /**
      * Synchronizes enrolled app locales with current primary SIM override state.
      */
     fun sync(ctx: Context, primary: RegionLogic.PrimaryState) = synchronized(lock) {
@@ -80,7 +95,7 @@ object LocaleOverrideController {
         val masterOn = AppLocaleStore.isMasterOn(ctx)
         for (pkg in AppLocaleStore.enrolled(ctx)) {
             val baseline = AppLocaleStore.baselineOf(ctx, pkg) ?: ""
-            val desired = RegionLogic.desiredTag(masterOn, primary, baseline)
+            val desired = RegionLogic.desiredTag(masterOn, primary, baseline, ::localeFor)
             if (!tagsEqual(readAppLocale(pkg), desired)) applyAppLocale(pkg, desired)
         }
     }

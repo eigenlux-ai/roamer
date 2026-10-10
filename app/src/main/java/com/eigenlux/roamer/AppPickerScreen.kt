@@ -2,7 +2,6 @@ package com.eigenlux.roamer
 
 import android.content.pm.ApplicationInfo
 import android.util.LruCache
-import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
@@ -31,7 +30,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -61,9 +59,10 @@ import com.eigenlux.roamer.core.LocaleOverrideController
 import com.eigenlux.roamer.core.RegionLogic
 import com.eigenlux.roamer.data.AppLocaleStore
 import com.eigenlux.roamer.ui.CheckCircle
-import com.eigenlux.roamer.ui.ControlShape
+import com.eigenlux.roamer.ui.ChevronBack
 import com.eigenlux.roamer.ui.ToolbarIconButton
 import com.eigenlux.roamer.ui.SoftButton
+import com.eigenlux.roamer.ui.SearchField
 import com.eigenlux.roamer.ui.glassColors
 import com.eigenlux.roamer.ui.roamerGround
 import com.eigenlux.roamer.ui.theme.RoamerCode
@@ -108,8 +107,6 @@ fun AppPickerScreen(primary: RegionLogic.PrimaryState, onClose: () -> Unit) {
             }.getOrDefault(emptyList())
         }
     }
-
-    BackHandler(onBack = onClose)
 
     val hazeState = rememberHazeState()
     val listState = rememberLazyListState()
@@ -187,11 +184,11 @@ fun AppPickerScreen(primary: RegionLogic.PrimaryState, onClose: () -> Unit) {
             title = stringResource(R.string.app_picker_title),
             modifier = Modifier.onSizeChanged { headerHeight = with(density) { it.height.toDp() } },
             navigation = {
-                ToolbarIconButton(onClick = onClose) {
+                ToolbarIconButton(onClick = onClose, tint = MaterialTheme.colorScheme.onSurface) {
                     Icon(
-                        Icons.AutoMirrored.Filled.KeyboardArrowLeft,
+                        ChevronBack,
                         contentDescription = stringResource(R.string.cd_back),
-                        modifier = Modifier.size(32.dp),
+                        modifier = Modifier.size(28.dp),
                     )
                 }
             },
@@ -215,45 +212,6 @@ fun AppPickerScreen(primary: RegionLogic.PrimaryState, onClose: () -> Unit) {
             },
         )
     }
-}
-
-/**
- * Search field of the glass header.
- */
-@Composable
-private fun SearchField(query: String, onQueryChange: (String) -> Unit, placeholder: String) {
-    val scheme = MaterialTheme.colorScheme
-    BasicTextField(
-        value = query,
-        onValueChange = onQueryChange,
-        singleLine = true,
-        textStyle = MaterialTheme.typography.bodyLarge.copy(color = scheme.onSurface),
-        cursorBrush = SolidColor(scheme.primary),
-        modifier = Modifier.fillMaxWidth(),
-        decorationBox = { field ->
-            Row(
-                modifier = Modifier
-                    .background(glassColors.soft, ControlShape)
-                    .heightIn(min = 44.dp)
-                    .padding(horizontal = Spacing.md),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
-            ) {
-                Icon(
-                    Icons.Filled.Search,
-                    contentDescription = null,
-                    tint = scheme.onSurfaceVariant,
-                    modifier = Modifier.size(20.dp),
-                )
-                Box(modifier = Modifier.weight(1f)) {
-                    if (query.isEmpty()) {
-                        Text(placeholder, style = MaterialTheme.typography.bodyLarge, color = scheme.onSurfaceVariant)
-                    }
-                    field()
-                }
-            }
-        },
-    )
 }
 
 @Composable

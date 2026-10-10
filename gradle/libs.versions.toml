@@ -12,6 +12,7 @@ shizuku = "13.1.5"
 hiddenApiBypass = "4.3"
 splashscreen = "1.0.1"
 haze = "1.7.2"
+orgJson = "20240303"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -35,6 +36,7 @@ shizuku-provider = { group = "dev.rikka.shizuku", name = "provider", version.ref
 hiddenapibypass = { group = "org.lsposed.hiddenapibypass", name = "hiddenapibypass", version.ref = "hiddenApiBypass" }
 androidx-core-splashscreen = { group = "androidx.core", name = "core-splashscreen", version.ref = "splashscreen" }
 haze = { group = "dev.chrisbanes.haze", name = "haze", version.ref = "haze" }
+org-json = { group = "org.json", name = "json", version.ref = "orgJson" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

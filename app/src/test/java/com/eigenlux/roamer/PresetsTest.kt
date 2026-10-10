@@ -68,4 +68,25 @@ class PresetsTest {
         assertEquals(CarrierPresets.forCountry("us"), CarrierPresets.forCountry("US"))
         assertTrue(CarrierPresets.forCountry("zz").isEmpty())
     }
+
+    @Test
+    fun `every built-in region has carriers unless it has no operator of its own`() {
+        val codes = Locale.getISOCountries().map { it.lowercase(Locale.ROOT) } + CountryPresets.all.map { it.iso }
+        val missing = codes.distinct().filter {
+            CarrierPresets.forCountry(it).isEmpty() && it !in CarrierPresets.withoutCarriers
+        }
+        assertTrue("regions without carriers: $missing", missing.isEmpty())
+        CarrierPresets.withoutCarriers.forEach {
+            assertTrue("$it is listed as having no carriers but has some", CarrierPresets.forCountry(it).isEmpty())
+        }
+    }
+
+    @Test
+    fun `carrier lists have no blank or repeated names`() {
+        Locale.getISOCountries().forEach { code ->
+            val carriers = CarrierPresets.forCountry(code)
+            assertEquals("$code has repeated carriers", carriers.size, carriers.toSet().size)
+            assertTrue("$code has a blank or untrimmed carrier", carriers.all { it.isNotBlank() && it == it.trim() })
+        }
+    }
 }

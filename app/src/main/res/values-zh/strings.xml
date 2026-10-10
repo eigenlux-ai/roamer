@@ -4,6 +4,8 @@
 
     <!-- ===== 顶栏 / 分区 ===== -->
     <string name="cd_refresh_all">刷新全部信息</string>
+    <string name="cd_settings">设置</string>
+    <string name="settings_title">设置</string>
     <string name="section_quick_switch">快速切换</string>
     <string name="section_sim_details">SIM 详情</string>
     <string name="section_region_override">区域覆写</string>
@@ -115,4 +117,59 @@
     <string name="app_picker_loading">正在加载应用…</string>
     <string name="app_picker_empty">无匹配应用</string>
     <string name="cd_back">返回</string>
+
+    <!-- ===== 设置 ===== -->
+    <string name="settings_regions">国家/地区</string>
+    <string name="settings_quick_switch">快速切换</string>
+    <string name="action_edit">编辑</string>
+    <string name="action_done">完成</string>
+    <string name="action_revert">还原</string>
+    <string name="action_save">保存</string>
+    <string name="action_add">添加</string>
+    <string name="cd_delete">删除</string>
+    <string name="cd_reorder">拖动排序</string>
+    <string name="regions_add">添加国家/地区</string>
+    <string name="regions_footer">这里的顺序就是首页“国家/地区”菜单的顺序。点击某一项可以配置它的运营商。</string>
+    <string name="regions_edit_hint">拖动右侧的手柄调整顺序,点击减号移出列表。保存后才会生效。</string>
+    <string name="regions_empty">列表为空。点击“编辑”添加国家/地区。</string>
+    <string name="add_region_search">搜索国家/地区</string>
+    <string name="add_region_empty">无匹配结果</string>
+    <string name="regions_add_custom">添加自定义国家/地区</string>
+    <string name="regions_built_in">内置国家/地区</string>
+    <string name="region_added">已添加</string>
+    <string name="custom_region_title">自定义国家/地区</string>
+    <string name="custom_code">代码</string>
+    <string name="custom_code_hint">两位字母</string>
+    <string name="custom_name">名称</string>
+    <string name="custom_footer">代码会作为归属地写入 SIM,通常是 ISO 3166-1 的两位字母代码。</string>
+    <string name="custom_code_taken">这个代码已经存在。</string>
+    <string name="region_carriers">运营商</string>
+    <string name="region_carriers_footer">预置运营商只能启用或停用,自己添加的可以删除。在首页选择该国家/地区时,默认使用第一个已启用的运营商。</string>
+    <string name="region_carriers_empty">没有已启用的运营商。覆写时将只修改归属地。</string>
+    <string name="carrier_off">未启用</string>
+    <string name="tag_custom">自定义</string>
+    <string name="field_not_set">未配置</string>
+    <string name="quick_shown">显示在首页</string>
+    <string name="quick_available">可添加</string>
+    <string name="quick_footer">最多显示 %1$d 个,顺序即首页按钮的顺序。</string>
+    <string name="quick_empty">未选择任何地区,首页将隐藏快速切换。</string>
+    <string name="quick_full">已达上限。先移除一个才能再添加。</string>
+    <string name="config_export">导出配置</string>
+    <string name="config_import">导入配置</string>
+    <string name="config_reset">还原默认配置</string>
+    <string name="config_footer">配置包含国家/地区列表、运营商、自定义国家/地区和快速切换,不包含外观和生效应用。导入会替换当前配置。</string>
+    <string name="config_reset_title">还原默认配置?</string>
+    <string name="config_reset_message">国家/地区列表、运营商、自定义国家/地区和快速切换都会恢复为默认值。此操作无法撤销。</string>
+    <string name="action_cancel">取消</string>
+    <string name="action_reset">还原</string>
+    <string name="config_exported">配置已导出。</string>
+    <string name="config_export_failed">导出失败。</string>
+    <string name="config_imported">配置已导入。</string>
+    <string name="config_import_failed">导入失败:文件不是有效的 Roamer 配置。</string>
+    <string name="config_reset_done">已还原默认配置。</string>
+    <string name="settings_about">关于</string>
+    <string name="about_version">版本 %1$s (%2$d)</string>
+    <string name="about_source">源代码</string>
+    <string name="about_footer">Roamer 是开源软件,以 %1$s 许可发布。</string>
+    <string name="about_licenses">开源许可</string>
 </resources>

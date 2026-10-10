@@ -15,6 +15,7 @@ import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
@@ -32,9 +33,11 @@ import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
@@ -51,6 +54,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.dropShadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.graphics.drawscope.ContentDrawScope
 import androidx.compose.ui.graphics.graphicsLayer
@@ -62,7 +66,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
 import com.eigenlux.roamer.ui.theme.Spacing
+import com.eigenlux.roamer.ui.theme.destructiveColor
 import com.eigenlux.roamer.ui.theme.isDarkScheme
 import com.eigenlux.roamer.ui.theme.successColor
 import kotlinx.coroutines.launch
@@ -229,17 +235,19 @@ private fun RoundedButton(
 }
 
 /**
- * Toolbar action: a bare icon in the accent color, with no container.
+ * Toolbar button: a bare icon with no container. Actions use the accent color; navigation
+ * (back, settings) passes a neutral [tint] so the accent stays reserved for actions.
  */
 @Composable
 fun ToolbarIconButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
+    tint: Color = MaterialTheme.colorScheme.primary,
     content: @Composable () -> Unit,
 ) {
     val interaction = remember { MutableInteractionSource() }
-    val color = MaterialTheme.colorScheme.primary
+    val color = tint
     Box(
         modifier = modifier
             .size(48.dp)
@@ -269,9 +277,9 @@ fun PlainButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
+    color: Color = MaterialTheme.colorScheme.primary,
 ) {
     val interaction = remember { MutableInteractionSource() }
-    val color = MaterialTheme.colorScheme.primary
     Box(
         modifier = modifier
             .minimumInteractiveComponentSize()
@@ -413,6 +421,23 @@ fun SegmentedControl(
 }
 
 /**
+ * Small neutral label beside a row title, such as the mark on entries the user added.
+ */
+@Composable
+fun Tag(text: String, modifier: Modifier = Modifier) {
+    Text(
+        text,
+        style = MaterialTheme.typography.labelSmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        maxLines = 1,
+        softWrap = false,
+        modifier = modifier
+            .background(glassColors.soft, MaterialTheme.shapes.extraSmall)
+            .padding(horizontal = 6.dp, vertical = 2.dp),
+    )
+}
+
+/**
  * Round selection mark for list rows: a filled check when [checked], an empty ring otherwise.
  */
 @Composable
@@ -462,5 +487,83 @@ fun MenuItemRow(text: String, selected: Boolean, onClick: () -> Unit) {
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
+    }
+}
+
+/**
+ * Search field of the glass header.
+ */
+@Composable
+fun SearchField(query: String, onQueryChange: (String) -> Unit, placeholder: String) {
+    val scheme = MaterialTheme.colorScheme
+    BasicTextField(
+        value = query,
+        onValueChange = onQueryChange,
+        singleLine = true,
+        textStyle = MaterialTheme.typography.bodyLarge.copy(color = scheme.onSurface),
+        cursorBrush = SolidColor(scheme.primary),
+        modifier = Modifier.fillMaxWidth(),
+        decorationBox = { field ->
+            Row(
+                modifier = Modifier
+                    .background(glassColors.soft, ControlShape)
+                    .heightIn(min = 44.dp)
+                    .padding(horizontal = Spacing.md),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+            ) {
+                Icon(
+                    Icons.Filled.Search,
+                    contentDescription = null,
+                    tint = scheme.onSurfaceVariant,
+                    modifier = Modifier.size(20.dp),
+                )
+                Box(modifier = Modifier.weight(1f)) {
+                    if (query.isEmpty()) {
+                        Text(placeholder, style = MaterialTheme.typography.bodyLarge, color = scheme.onSurfaceVariant)
+                    }
+                    field()
+                }
+            }
+        },
+    )
+}
+
+/**
+ * Alert that asks the user to confirm a destructive action. The confirming button is red.
+ */
+@Composable
+fun ConfirmDialog(
+    title: String,
+    message: String,
+    confirmLabel: String,
+    cancelLabel: String,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val scheme = MaterialTheme.colorScheme
+    Dialog(onDismissRequest = onDismiss) {
+        Column(
+            modifier = Modifier
+                .clip(MaterialTheme.shapes.extraLarge)
+                .background(scheme.surfaceContainerHigh)
+                .padding(Spacing.xl),
+            verticalArrangement = Arrangement.spacedBy(Spacing.md),
+        ) {
+            Text(title, style = MaterialTheme.typography.titleSmall, color = scheme.onSurface)
+            Text(message, style = MaterialTheme.typography.bodyMedium, color = scheme.onSurfaceVariant)
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(top = Spacing.sm),
+                horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+            ) {
+                SoftButton(onClick = onDismiss, modifier = Modifier.weight(1f)) { Text(cancelLabel) }
+                SoftButton(
+                    onClick = onConfirm,
+                    modifier = Modifier.weight(1f),
+                    container = destructiveColor,
+                    contentColor = Color.White,
+                ) { Text(confirmLabel) }
+            }
+        }
     }
 }

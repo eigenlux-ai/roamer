@@ -1,40 +1,302 @@
 package com.eigenlux.roamer.data
 
 /**
- * Static carrier presets indexed by ISO country code.
- * The first item in each list is the default selection for that region.
+ * Built-in carriers of every country and region, indexed by ISO code.
+ *
+ * Each list is ordered by subscriber count in that market, largest first, so the first entry is
+ * the default. Names are the consumer brands as shown to subscribers. Where the figures come
+ * from, and which markets have no recent figures, is recorded in `docs/CARRIER_DATA.md`; update
+ * that file together with this one.
  */
 object CarrierPresets {
 
-    private val byCountry: Map<String, List<String>> = mapOf(
-        "cn" to listOf("中国移动", "中国电信", "中国联通", "中国广电"),
-        "hk" to listOf("CMHK", "csl", "3", "SmarTone"),
-        "mo" to listOf("CTM", "China Telecom", "3"),
-        "tw" to listOf("中華電信", "台灣大哥大", "遠傳電信"),
-        "jp" to listOf("NTT docomo", "au", "SoftBank", "Rakuten Mobile"),
-        "kr" to listOf("SK Telecom", "KT", "LG U+"),
-        "sg" to listOf("Singtel", "StarHub", "M1", "Simba"),
-        "my" to listOf("CelcomDigi", "Maxis", "U Mobile", "YES"),
-        "th" to listOf("True", "AIS", "NT"),
-        "vn" to listOf("Viettel", "Vinaphone", "MobiFone"),
-        "id" to listOf("Telkomsel", "Indosat", "XL"),
-        "ph" to listOf("Smart", "Globe", "DITO"),
-        "in" to listOf("Jio", "Airtel", "Vi", "BSNL"),
-        "us" to listOf("T-Mobile", "Verizon", "AT&T"),
-        "ca" to listOf("Rogers", "Bell", "Telus"),
-        "br" to listOf("Vivo", "Claro", "TIM"),
-        "gb" to listOf("EE", "O2", "Vodafone", "Three"),
-        "de" to listOf("Telekom", "O2", "Vodafone", "1&1"),
-        "fr" to listOf("Orange", "SFR", "Bouygues Telecom", "Free"),
-        "it" to listOf("WindTre", "TIM", "Vodafone", "Iliad"),
-        "es" to listOf("Orange", "Movistar", "Vodafone", "Yoigo"),
-        "nl" to listOf("Odido", "KPN", "Vodafone"),
-        "ch" to listOf("Swisscom", "Sunrise", "Salt"),
-        "ru" to listOf("MTS", "MegaFon", "Beeline", "t2"),
-        "ae" to listOf("Etisalat", "du"),
-        "au" to listOf("Telstra", "Optus", "Vodafone"),
-        "nz" to listOf("Spark", "One NZ", "2degrees"),
-    )
+    /** Territories without a mobile operator of their own. */
+    val withoutCarriers: Set<String> = setOf("aq", "bv", "gs", "hm", "pn", "tf", "um")
+
+    private val byCountry: Map<String, List<String>> = buildMap {
+        fun add(iso: String, vararg carriers: String) = put(iso, carriers.toList())
+
+        // East Asia
+        add("cn", "中国移动", "中国电信", "中国联通", "中国广电")
+        add("hk", "CMHK", "csl", "3", "SmarTone")
+        add("mo", "CTM", "China Telecom")
+        add("tw", "中華電信", "台灣大哥大", "遠傳電信")
+        add("jp", "NTT docomo", "au", "SoftBank", "Rakuten Mobile")
+        add("kr", "SK Telecom", "KT", "LG U+")
+        add("kp", "Koryolink", "Kangsong NET")
+        add("mn", "Mobicom", "Unitel", "Skytel", "G-Mobile", "ONDO")
+
+        // Southeast Asia
+        add("sg", "Singtel", "StarHub", "M1", "Simba")
+        add("my", "CelcomDigi", "Maxis", "U Mobile", "YES", "unifi")
+        add("th", "True", "AIS", "NT")
+        add("vn", "Viettel", "MobiFone", "Vinaphone", "Vietnamobile")
+        add("id", "Telkomsel", "Indosat", "XL", "Smartfren")
+        add("ph", "Globe", "Smart", "DITO")
+        add("mm", "MPT", "Atom", "Ooredoo", "Mytel")
+        add("kh", "Metfone", "Smart", "Cellcard")
+        add("la", "Unitel", "Lao Telecom", "ETL", "Best Telecom")
+        add("bn", "DST", "Progresif", "imagine")
+        add("tl", "Telemor", "Timor Telecom", "Telkomcel")
+
+        // South Asia
+        add("in", "Jio", "Airtel", "Vi", "BSNL")
+        add("pk", "Jazz", "Zong", "Telenor", "Ufone", "SCOM")
+        add("bd", "Grameenphone", "Robi", "Banglalink", "Teletalk")
+        add("lk", "Dialog", "SLT-Mobitel", "Hutch")
+        add("np", "Nepal Telecom", "Ncell")
+        add("bt", "B-Mobile", "TashiCell")
+        add("mv", "Dhiraagu", "Ooredoo")
+        add("af", "ATOMA", "Roshan", "Etisalat", "AWCC", "Salaam")
+
+        // Central Asia and the Caucasus
+        add("kz", "Beeline", "Tele2", "Altel", "Kcell", "activ")
+        add("uz", "Ucell", "Mobiuz", "Uzmobile", "Beeline")
+        add("kg", "O!", "MEGA", "Beeline")
+        add("tj", "Tcell", "MegaFon", "Babilon-M", "ZET-Mobile")
+        add("tm", "TM CELL")
+        add("az", "Azercell", "Bakcell", "Nar")
+        add("am", "Viva", "Team", "Ucom")
+        add("ge", "Magti", "Silknet", "Cellfie")
+
+        // Middle East
+        add("tr", "Turkcell", "Türk Telekom", "Vodafone")
+        add("il", "Cellcom", "Partner", "Pelephone", "HOT Mobile", "wecom")
+        add("ps", "Jawwal", "Ooredoo")
+        add("jo", "Zain", "Orange", "Umniah")
+        add("lb", "touch", "Alfa")
+        add("sy", "Syriatel", "MTN")
+        add("iq", "Zain", "Asiacell", "Korek")
+        add("ir", "MCI", "Irancell", "RighTel")
+        add("sa", "stc", "Mobily", "Zain")
+        add("ae", "e&", "du")
+        add("qa", "Ooredoo", "Vodafone")
+        add("kw", "Ooredoo", "Zain", "stc")
+        add("bh", "Batelco", "stc", "Zain")
+        add("om", "Omantel", "Ooredoo", "Vodafone")
+        add("ye", "Yemen Mobile", "Sabafon", "YOU", "Y")
+
+        // Western Europe
+        add("gb", "O2", "EE", "Vodafone", "Three")
+        add("ie", "Vodafone", "Three", "eir")
+        add("fr", "Orange", "SFR", "Bouygues Telecom", "Free")
+        add("de", "Telekom", "O2", "Vodafone", "1&1")
+        add("nl", "Odido", "KPN", "Vodafone")
+        add("be", "Proximus", "Orange", "Telenet")
+        add("lu", "POST", "Tango", "Orange")
+        add("ch", "Swisscom", "Sunrise", "Salt")
+        add("at", "A1", "Magenta", "Drei")
+        add("li", "FL1", "7acht", "Swisscom")
+        add("mc", "Monaco Telecom")
+        add("im", "Manx Telecom", "Sure")
+        add("je", "JT", "Sure")
+        add("gg", "Sure", "JT")
+        add("gi", "Gibtelecom")
+
+        // Southern Europe
+        add("es", "Orange", "Movistar", "Vodafone", "DIGI")
+        add("pt", "MEO", "NOS", "Vodafone", "DIGI")
+        add("it", "Vodafone", "WindTre", "TIM", "Iliad")
+        add("sm", "TIM San Marino", "San Marino Telecom")
+        add("va", "Vodafone", "TIM")
+        add("mt", "Epic", "GO", "Melita")
+        add("gr", "Cosmote", "Vodafone", "Nova")
+        add("cy", "Cyta", "Epic", "PrimeTel", "Cablenet")
+        add("ad", "Andorra Telecom")
+
+        // Northern Europe
+        add("se", "Telia", "Tele2", "Telenor", "Tre")
+        add("no", "Telenor", "Telia", "Ice")
+        add("dk", "YouSee", "Norlys", "Telenor", "3")
+        add("fi", "Elisa", "DNA", "Telia")
+        add("is", "Síminn", "Nova", "Vodafone")
+        add("ee", "Telia", "Elisa", "Tele2")
+        add("lv", "Tele2", "LMT", "Bite")
+        add("lt", "Tele2", "Telia", "Bitė")
+        add("fo", "Føroya Tele", "Nema")
+        add("gl", "Tusass")
+        add("ax", "Ålcom", "Elisa", "Telia")
+        add("sj", "Telenor", "Telia")
+
+        // Central and Eastern Europe
+        add("pl", "Play", "Orange", "T-Mobile", "Plus")
+        add("cz", "T-Mobile", "O2", "Vodafone")
+        add("sk", "O2", "Orange", "Telekom", "4ka")
+        add("hu", "Telekom", "One", "Yettel")
+        add("ro", "Digi", "Orange", "Vodafone")
+        add("bg", "A1", "Vivacom", "Yettel")
+        add("si", "Telekom Slovenije", "Telemach", "A1", "T-2")
+        add("hr", "Hrvatski Telekom", "A1", "Telemach")
+        add("ba", "BH Telecom", "m:tel", "HT Eronet")
+        add("rs", "mts", "Yettel", "A1")
+        add("me", "m:tel", "Crnogorski Telekom", "One")
+        add("mk", "A1", "Telekom", "m:tel")
+        add("al", "One", "Vodafone")
+        add("xk", "Vala", "IPKO")
+        add("ua", "Kyivstar", "Vodafone", "lifecell")
+        add("by", "MTS", "A1", "life:)")
+        add("md", "Orange", "Moldcell", "Moldtelecom")
+        add("ru", "MTS", "MegaFon", "t2", "Beeline")
+
+        // North America
+        add("us", "Verizon", "T-Mobile", "AT&T")
+        add("ca", "Rogers", "Bell", "Telus", "Vidéotron", "SaskTel")
+        add("mx", "Telcel", "AT&T", "Movistar")
+        add("pm", "SPM Telecom", "Globaltel")
+        add("bm", "One", "Digicel")
+
+        // Central America
+        add("gt", "Tigo", "Claro")
+        add("bz", "Digi", "Smart")
+        add("sv", "Tigo", "Claro", "Movistar", "Digicel")
+        add("hn", "Tigo", "Claro", "Hondutel")
+        add("ni", "Claro", "Tigo")
+        add("cr", "Liberty", "Kölbi", "Claro")
+        add("pa", "Tigo", "+Móvil")
+
+        // Caribbean
+        add("cu", "Cubacel")
+        add("do", "Claro", "Altice", "Viva")
+        add("ht", "Digicel", "Natcom")
+        add("jm", "Digicel", "Flow")
+        add("pr", "Claro", "Liberty", "T-Mobile")
+        add("vi", "Liberty", "T-Mobile", "Viya")
+        add("tt", "Digicel", "bmobile")
+        add("bs", "Aliv", "BTC")
+        add("bb", "Flow", "Digicel")
+        add("ag", "Digicel", "Flow", "APUA inet")
+        add("ai", "Flow", "Digicel")
+        add("aw", "SETAR", "Digicel")
+        add("bq", "Digicel", "Flow", "Kla")
+        add("cw", "Flow", "Digicel")
+        add("sx", "TelCell", "Flow")
+        add("dm", "Digicel", "Flow")
+        add("gd", "Digicel", "Flow")
+        add("kn", "Flow", "Digicel")
+        add("ky", "Flow", "Digicel")
+        add("lc", "Digicel", "Flow")
+        add("ms", "Flow", "Digicel")
+        add("tc", "Flow", "Digicel")
+        add("vc", "Digicel", "Flow")
+        add("vg", "CCT", "Flow", "Digicel")
+        add("gp", "Orange", "Digicel", "SFR", "Free")
+        add("mq", "Orange", "Digicel", "SFR", "Free")
+        add("bl", "Orange", "Digicel", "Dauphin Telecom")
+        add("mf", "Orange", "Digicel", "Dauphin Telecom")
+
+        // South America
+        add("br", "Vivo", "Claro", "TIM", "Algar", "Brisanet")
+        add("ar", "Claro", "Personal", "Movistar")
+        add("cl", "Entel", "Movistar", "WOM", "Claro")
+        add("co", "Claro", "Movistar", "Tigo", "WOM")
+        add("pe", "Claro", "Bitel", "Entel", "Movistar")
+        add("ve", "Movistar", "Digitel", "Movilnet")
+        add("ec", "Claro", "Tigo", "CNT")
+        add("bo", "Entel", "Tigo", "Viva")
+        add("py", "Tigo", "Personal", "Claro")
+        add("uy", "Antel", "Tigo", "Claro")
+        add("gy", "Digicel", "One", "ENet")
+        add("sr", "Telesur", "Digicel")
+        add("gf", "Orange", "SFR", "Digicel")
+        add("fk", "Sure")
+
+        // North Africa
+        add("eg", "Vodafone", "Orange", "e&", "WE")
+        add("dz", "Mobilis", "Djezzy", "Ooredoo")
+        add("ma", "Orange", "inwi", "Maroc Telecom")
+        add("eh", "Orange", "inwi", "Maroc Telecom")
+        add("tn", "Ooredoo", "Tunisie Telecom", "Orange")
+        add("ly", "Libyana", "Almadar")
+        add("sd", "Zain", "MTN", "Sudani")
+
+        // West Africa
+        add("ng", "MTN", "Airtel", "Glo", "T2")
+        add("gh", "MTN", "Telecel", "AT")
+        add("ci", "Orange", "MTN", "Moov Africa")
+        add("sn", "Orange", "Yas", "Expresso")
+        add("ml", "Orange", "Moov Africa", "Telecel")
+        add("bf", "Orange", "Moov Africa", "Telecel")
+        add("ne", "Airtel", "Moov Africa", "Zamani", "Niger Telecoms")
+        add("tg", "Yas", "Moov Africa")
+        add("bj", "MTN", "Celtiis", "Moov Africa")
+        add("gn", "Orange", "MTN", "Cellcom")
+        add("gw", "Orange", "Telecel")
+        add("sl", "Africell", "Orange", "QCell")
+        add("lr", "Orange", "Lonestar Cell MTN")
+        add("gm", "Africell", "QCell", "Comium", "Gamcel")
+        add("mr", "Moov Mauritel", "Chinguitel", "Mattel")
+        add("cv", "Alou", "Unitel T+")
+
+        // Central Africa
+        add("cm", "Orange", "MTN", "Blue", "Nexttel")
+        add("td", "Airtel", "Moov Africa")
+        add("cf", "Orange", "Telecel", "Moov Africa")
+        add("gq", "GETESA", "Muni")
+        add("ga", "Moov Africa", "Airtel")
+        add("cg", "MTN", "Airtel")
+        add("cd", "Vodacom", "Airtel", "Orange", "Africell")
+        add("ao", "Unitel", "Africell", "Movicel")
+        add("st", "CST", "Unitel")
+
+        // East Africa
+        add("et", "Ethio Telecom", "Safaricom")
+        add("er", "EriTel")
+        add("dj", "Djibouti Telecom")
+        add("so", "Hormuud", "Somtel", "Telesom", "Golis")
+        add("ss", "MTN", "Zain", "Digitel")
+        add("ke", "Safaricom", "Airtel", "Faiba", "Telkom")
+        add("ug", "MTN", "Airtel", "Lycamobile")
+        add("tz", "Vodacom", "Yas", "Airtel", "Halotel", "TTCL")
+        add("rw", "MTN", "Airtel")
+        add("bi", "Lumitel", "Econet Leo", "Onamob")
+
+        // Southern Africa and the Indian Ocean
+        add("za", "Vodacom", "MTN", "Telkom", "Cell C", "rain")
+        add("na", "MTC", "TN Mobile")
+        add("bw", "Mascom", "Orange", "BTC")
+        add("zw", "Econet", "NetOne", "Telecel")
+        add("zm", "Airtel", "MTN", "Zamtel", "Zed Mobile")
+        add("mw", "Airtel", "TNM")
+        add("mz", "Vodacom", "Movitel", "Tmcel")
+        add("ls", "Vodacom", "Econet")
+        add("sz", "MTN", "Eswatini Mobile")
+        add("mg", "Yas", "Orange", "Airtel")
+        add("mu", "my.t", "Emtel", "Chili")
+        add("sc", "Cable & Wireless", "Airtel", "Intelvision")
+        add("km", "Huri", "Yas")
+        add("re", "Orange", "SFR", "Free", "Zeop")
+        add("yt", "Orange", "SFR", "Only")
+        add("sh", "Sure")
+        add("io", "Sure")
+
+        // Oceania
+        add("au", "Telstra", "Optus", "Vodafone")
+        add("nz", "Spark", "One NZ", "2degrees")
+        add("pg", "Digicel", "Vodafone", "Telikom")
+        add("fj", "Vodafone", "Digicel")
+        add("sb", "Our Telekom", "bmobile")
+        add("vu", "Digicel", "Vodafone")
+        add("nc", "Mobilis")
+        add("pf", "Vini", "Vodafone", "Viti")
+        add("ws", "Vodafone", "Digicel")
+        add("to", "Digicel", "U-Call")
+        add("ki", "Vodafone", "Ocean Link")
+        add("fm", "FSM Telecom")
+        add("mh", "MINTA")
+        add("pw", "PNCC", "PT Waves")
+        add("nr", "Digicel")
+        add("tv", "Tuvalu Telecom")
+        add("ck", "Vodafone")
+        add("nu", "Telecom Niue")
+        add("tk", "Teletok")
+        add("wf", "Manuia")
+        add("as", "Bluesky", "ASTCA")
+        add("gu", "GTA", "Docomo Pacific", "IT&E")
+        add("mp", "IT&E", "Docomo Pacific")
+        add("nf", "Norfolk Telecom")
+        add("cx", "Telstra")
+        add("cc", "Telstra")
+    }
 
     fun forCountry(iso: String): List<String> = byCountry[iso.lowercase()].orEmpty()
 }

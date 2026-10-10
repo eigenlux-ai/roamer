@@ -55,9 +55,14 @@ object RegionLogic {
     /**
      * Determines the desired locale tag for an enrolled package based on override state.
      */
-    fun desiredTag(masterOn: Boolean, primary: PrimaryState, baseline: String): String {
+    fun desiredTag(
+        masterOn: Boolean,
+        primary: PrimaryState,
+        baseline: String,
+        localeOf: (String) -> String? = ::deriveLocale,
+    ): String {
         if (masterOn && primary.overridden && primary.country != null) {
-            deriveLocale(primary.country)?.let { return it }
+            localeOf(primary.country)?.let { return it }
         }
         return baseline
     }

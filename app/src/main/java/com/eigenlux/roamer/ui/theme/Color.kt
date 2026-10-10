@@ -96,6 +96,10 @@ val OnErrorContainerDark = Color(0xFFFFDAD6)
 // Success State
 val SuccessLight = Color(0xFF2E7D57)
 val SuccessDark = Color(0xFF6FD3A3)
+// Destructive actions (delete buttons): a saturated red, unlike the muted error role
+val DestructiveLight = Color(0xFFE5382D)
+val DestructiveDark = Color(0xFFFF5549)
+
 val SuccessContainerLight = Color(0xFFD5EFE0)
 val OnSuccessContainerLight = Color(0xFF0B3D26)
 val SuccessContainerDark = Color(0xFF1F4D38)

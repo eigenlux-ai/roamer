@@ -82,6 +82,8 @@ dependencies {
     // Backdrop blur for the glass control layer
     implementation(libs.haze)
     testImplementation(libs.junit)
+    // Real org.json for JVM tests; the android.jar stub throws.
+    testImplementation(libs.org.json)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     androidTestImplementation(libs.androidx.espresso.core)

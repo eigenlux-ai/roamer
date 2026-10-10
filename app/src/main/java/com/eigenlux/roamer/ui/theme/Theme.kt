@@ -150,6 +150,13 @@ val onSuccessContainerColor: Color
     get() = if (isDarkScheme) OnSuccessContainerDark else OnSuccessContainerLight
 
 /**
+ * Theme-aware color of destructive controls such as delete buttons.
+ */
+val destructiveColor: Color
+    @Composable @ReadOnlyComposable
+    get() = if (isDarkScheme) DestructiveDark else DestructiveLight
+
+/**
  * Harbor blue of the ambient ground glow.
  */
 val ambientColor: Color
