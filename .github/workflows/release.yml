@@ -24,6 +24,9 @@ jobs:
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          # The action's default list includes the removed "tools" package, which makes sdkmanager fail.
+          packages: platform-tools
 
       # Toolchain is new (compileSdk 36.1 / AGP 9.2.1); install the platform explicitly.
       # If the log reports a missing/rejected package, run `sdkmanager --list` and adjust the versions.
