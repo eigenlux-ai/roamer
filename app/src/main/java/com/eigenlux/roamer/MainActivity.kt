@@ -54,6 +54,7 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -101,12 +102,15 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.text.style.LineBreak
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.WindowCompat
@@ -362,15 +366,12 @@ private fun MainScreen(
                                 modifier = Modifier.weight(1f),
                                 verticalArrangement = Arrangement.spacedBy(2.dp),
                             ) {
+                                // Balanced lines: in English the title wraps and would leave one word alone.
                                 Text(
                                     stringResource(R.string.region_follow_primary),
-                                    style = MaterialTheme.typography.bodyLarge,
+                                    style = MaterialTheme.typography.bodyLarge.copy(lineBreak = LineBreak.Heading),
                                 )
-                                Text(
-                                    stringResource(R.string.region_follow_hint),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
+                                Footnote(stringResource(R.string.region_follow_hint))
                             }
                             ToggleSwitch(
                                 checked = vm.regionMasterOn,
@@ -609,7 +610,7 @@ private fun Section(title: String, content: @Composable () -> Unit) {
 private fun Footnote(text: String, modifier: Modifier = Modifier) {
     Text(
         text,
-        style = MaterialTheme.typography.bodySmall,
+        style = MaterialTheme.typography.bodySmall.copy(lineBreak = LineBreak.Paragraph),
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = modifier,
     )
@@ -874,18 +875,24 @@ private fun SimCard(
 
             val originalLabel = stringResource(R.string.value_original)
             val currentLabel = stringResource(R.string.value_current)
-            val labelWidth = rememberLabelWidth(originalLabel, currentLabel)
+            val labelWidth = rememberTextWidth(MaterialTheme.typography.labelMedium, originalLabel, currentLabel)
+            // The carrier column is as wide as its longest value, so the country name, which is
+            // much longer in English, gets all the remaining width.
+            val realCarrier = sim.realCarrierName.ifBlank { "-" }
+            val carrierWidth = rememberTextWidth(CarrierValueStyle, realCarrier, sim.effectiveCarrier())
             Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
                 ValueRow(
                     label = originalLabel,
                     labelWidth = labelWidth,
+                    carrierWidth = carrierWidth,
                     country = countryLabel(sim.realCountryIso),
-                    carrier = sim.realCarrierName.ifBlank { "-" },
+                    carrier = realCarrier,
                 )
                 ValueCrossfade(sim.effectiveCarrier() to sim.countryIso) { (carrier, iso) ->
                     ValueRow(
                         label = currentLabel,
                         labelWidth = labelWidth,
+                        carrierWidth = carrierWidth,
                         country = countryLabel(iso),
                         carrier = carrier,
                     )
@@ -991,7 +998,7 @@ private fun MenuRow(
                 .heightIn(min = 52.dp)
                 .padding(start = Spacing.lg, end = Spacing.md),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(Spacing.md),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
         ) {
             Text(
                 label,
@@ -1008,6 +1015,8 @@ private fun MenuRow(
                 textAlign = TextAlign.End,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
+                // Long values (common in English) shrink a little before they are ellipsized.
+                autoSize = TextAutoSize.StepBased(minFontSize = 13.sp, maxFontSize = 16.sp, stepSize = 0.5.sp),
                 modifier = Modifier.weight(1f),
             )
             Icon(
@@ -1049,7 +1058,9 @@ private fun CountryMenuRow(
     }
     MenuRow(
         label = stringResource(R.string.field_country),
-        value = selected?.let { countryLabel(it.iso) }.orEmpty(),
+        // Name only: with the ISO code appended, English names did not fit beside the label.
+        // The code stays visible in the menu and on the Override button.
+        value = selected?.let { stringResource(it.nameRes) }.orEmpty(),
         enabled = enabled,
         options = options,
     )
@@ -1081,17 +1092,21 @@ private fun SimInfo.effectiveCarrier(): String =
     (if (overridden) carrierName else realCarrierName).ifBlank { "-" }
 
 /**
- * Width of the widest of [labels], so value rows share one column in every locale and font scale.
+ * Width of the widest of [texts] in [style], so value rows share one column in every locale
+ * and font scale.
  */
 @Composable
-private fun rememberLabelWidth(vararg labels: String): Dp {
+private fun rememberTextWidth(style: TextStyle, vararg texts: String): Dp {
     val measurer = rememberTextMeasurer()
-    val style = MaterialTheme.typography.labelMedium
     val density = LocalDensity.current
-    return remember(labels.toList(), style, density) {
-        with(density) { labels.maxOf { measurer.measure(it, style, maxLines = 1).size.width }.toDp() }
+    return remember(texts.toList(), style, density) {
+        // Rounded up: a column one pixel too narrow would ellipsize its own text.
+        with(density) { (texts.maxOf { measurer.measure(it, style, maxLines = 1).size.width } + 1).toDp() }
     }
 }
+
+private val CarrierValueStyle: TextStyle
+    @Composable get() = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium)
 
 /**
  * Fades between values when an override or restore changes them.
@@ -1106,7 +1121,7 @@ private fun <T> ValueCrossfade(value: T, content: @Composable (T) -> Unit) {
 }
 
 @Composable
-private fun ValueRow(label: String, labelWidth: Dp, country: String, carrier: String) {
+private fun ValueRow(label: String, labelWidth: Dp, carrierWidth: Dp, country: String, carrier: String) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(Spacing.md),
@@ -1124,16 +1139,16 @@ private fun ValueRow(label: String, labelWidth: Dp, country: String, carrier: St
             color = MaterialTheme.colorScheme.onSurface,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1.25f),
+            modifier = Modifier.weight(1f),
         )
         Text(
             carrier,
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Medium,
+            style = CarrierValueStyle,
             color = MaterialTheme.colorScheme.onSurface,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f),
+            // Capped so an unusually long carrier name cannot squeeze the country out.
+            modifier = Modifier.width(carrierWidth.coerceAtMost(140.dp)),
         )
     }
 }
