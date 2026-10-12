@@ -1,6 +1,8 @@
 package com.eigenlux.roamer
 
 import android.Manifest
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -116,6 +118,7 @@ import androidx.core.view.WindowCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.eigenlux.roamer.core.Diagnostics
 import com.eigenlux.roamer.core.RegionLogic
 import com.eigenlux.roamer.core.SimInfo
 import com.eigenlux.roamer.data.AppLocaleStore
@@ -146,6 +149,7 @@ import com.eigenlux.roamer.ui.theme.successContainerColor
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
+import kotlinx.coroutines.delay
 
 /**
  * Main Activity host for the Roamer user interface.
@@ -1202,23 +1206,44 @@ private fun LogChip(log: LogState) {
             .padding(Spacing.lg),
         verticalArrangement = Arrangement.spacedBy(Spacing.sm),
     ) {
+        val label = when (log.level) {
+            LogLevel.SUCCESS -> stringResource(R.string.log_level_success)
+            LogLevel.ERROR -> stringResource(R.string.log_level_error)
+            LogLevel.WARNING -> stringResource(R.string.log_level_partial)
+            LogLevel.INFO -> stringResource(R.string.log_level_info)
+        }
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
         ) {
             Icon(icon, contentDescription = null, tint = fg, modifier = Modifier.size(18.dp))
-            Text(
-                when (log.level) {
-                    LogLevel.SUCCESS -> stringResource(R.string.log_level_success)
-                    LogLevel.ERROR -> stringResource(R.string.log_level_error)
-                    LogLevel.WARNING -> stringResource(R.string.log_level_partial)
-                    LogLevel.INFO -> stringResource(R.string.log_level_info)
-                },
-                color = fg,
-                style = MaterialTheme.typography.labelLarge,
-            )
+            Text(label, color = fg, style = MaterialTheme.typography.labelLarge)
         }
         Text(log.message, style = RoamerCode, color = fg)
+        // A failure carries the environment it happened in, so a screenshot or a copy is a full report.
+        if (log.level == LogLevel.ERROR || log.level == LogLevel.WARNING) {
+            val context = LocalContext.current
+            val environment = remember(log) { Diagnostics.environment(context) }
+            var copied by remember(log) { mutableStateOf(false) }
+            LaunchedEffect(copied) {
+                if (copied) {
+                    delay(2000)
+                    copied = false
+                }
+            }
+            Text(environment, style = RoamerCode, color = fg)
+            PlainButton(
+                text = stringResource(if (copied) R.string.action_copied else R.string.action_copy),
+                color = fg,
+                modifier = Modifier.align(Alignment.End),
+                onClick = {
+                    context.getSystemService(ClipboardManager::class.java).setPrimaryClip(
+                        ClipData.newPlainText(label, "$label\n${log.message}\n$environment"),
+                    )
+                    copied = true
+                },
+            )
+        }
     }
 }
 

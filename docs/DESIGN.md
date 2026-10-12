@@ -78,6 +78,8 @@ Glass is built from three parts, following the iOS 27 revision of Liquid Glass:
 | Restore all bar | Glass bar with a `16dp` radius that springs in from the bottom while a SIM is overridden. |
 | Result message | Glass pill above the bottom edge. Skipped when the log section is already on screen. |
 
+The log section at the end of the main screen is a solid tinted container, not glass. A failed or partially successful entry adds an environment line in the code style and a **Copy** plain button at the lower right, in the container's `on…Container` color; the label reads **Copied** for two seconds after a tap.
+
 Backdrop blur uses the Haze library. Menus open in their own window and cannot blur the app behind them, so they use an opaque surface container instead.
 
 Controls that sit on solid content (secondary buttons, chips, the search field) are flat: a soft fill with no rim, blur, or shadow.

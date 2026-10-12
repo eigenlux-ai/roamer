@@ -18,6 +18,8 @@ Roamer handles this by:
 2. Executing `startDelegateShellPermissionIdentity(myUid, null)` within the running process to delegate shell permissions to Roamer's UID.
 3. Invoking `overrideConfig` holding `MODIFY_PHONE_STATE` as the application UID.
 
+`startInstrumentation` resolves the instrumentation in the user it is given and returns false when it is not installed there, so the call passes `SystemServices.userId()`, never a fixed `0`.
+
 ### Baseline-Free Restore
 Roamer does not persist pre-override snapshots. Values are re-derived at runtime:
 - **Country ISO**: Derived from the immutable MCC (`MccUtil.countryFromMcc(getSimOperator)`). Restore uses a two-step write: write back the real ISO first to update the subscription database, then call `overrideConfig(null)` to clear the layer.
@@ -34,7 +36,7 @@ The countries, their carriers, and the quick-switch row are user data (`data/Reg
 `ConfigCodec` writes the regions, custom regions, and quick-switch selection as versioned JSON (`format: roamer-config`, `version: 1`). Import replaces the configuration, drops invalid entries, and normalizes the rest like stored data. Theme and enrolled apps are per-device state and are not part of it. Bump the version and keep reading the old one when the shape changes.
 
 ### In-Process Result Channel
-The instrumentation attaches to the running app process, so it reports its outcome (overall error and per-subId failures) through `InstrumentationTrigger.report`. `CarrierConfigController` surfaces that error directly and only polls telephony state for SIMs the run did not report as failed. If no outcome arrives, it falls back to polling alone.
+The instrumentation attaches to the running app process, so it reports its outcome (overall error and per-subId failures) through `InstrumentationTrigger.report`. `CarrierConfigController` surfaces that error directly and only polls telephony state for SIMs the run did not report as failed. If no outcome arrives, it falls back to polling alone. A failed or partial entry in the log shows `Diagnostics.environment` beneath the message and offers Copy; the line names the device brand, never the model.
 
 ### Force Clear
 `CarrierConfigController.clearAll` targets SIMs that restore cannot reach because they are not detected as overridden. The `clear` action runs the same write-back as restore, but then calls `overrideConfig(null)` unconditionally (restore keeps the write-back when it has not settled).
@@ -53,6 +55,7 @@ com.eigenlux.roamer/
 │   ├── PrivilegedOverrideInstrumentation.kt
 │   ├── PrivilegedSubscriptionReader.kt
 │   ├── RegionLogic.kt
+│   ├── Diagnostics.kt
 │   └── LocaleOverrideController.kt
 ├── data/   # Presets and persistent app settings
 │   ├── CountryPresets.kt

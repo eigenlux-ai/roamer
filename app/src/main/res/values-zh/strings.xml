@@ -56,6 +56,8 @@
     <string name="log_level_error">失败</string>
     <string name="log_level_partial">部分成功</string>
     <string name="log_level_info">提示</string>
+    <string name="action_copy">复制</string>
+    <string name="action_copied">已复制</string>
 
     <!-- ===== Controller 结果消息 ===== -->
     <string name="err_shizuku_unavailable">Shizuku 未授权或未运行</string>

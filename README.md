@@ -20,7 +20,7 @@ Optionally, Roamer can mirror the primary SIM's overridden country code to selec
 - Sourced carrier data: preset carriers are ordered by subscriber count. Sources and the verification status of each market are in [`docs/CARRIER_DATA.md`](docs/CARRIER_DATA.md); the order is still unverified for some markets.
 - Reversible restore: values are derived dynamically at runtime rather than saved to disk.
 - Force clear: writes back the real values and clears every SIM's override layer, for SIMs that restore cannot target.
-- Failure reasons from the privileged run are reported in the in-app log, per SIM.
+- Failure reasons from the privileged run are reported in the in-app log, per SIM. A failed entry also shows the app version, Android release, device brand, Android user, and Shizuku identity, and can be copied for a bug report.
 - Optional per-app region override for targeted app testing.
 - UI details: a Liquid Glass interface with side-by-side original vs. active values, monospace technical codes (MCC/MNC/ISO/subId), and light/dark themes.
 
@@ -95,6 +95,7 @@ com.eigenlux.roamer/
 │   ├── PrivilegedOverrideInstrumentation
 │   ├── PrivilegedSubscriptionReader
 │   ├── RegionLogic
+│   ├── Diagnostics
 │   └── LocaleOverrideController
 ├── data/   # Region/carrier presets and local app state storage
 ├── ui/     # Glass material, shared controls, and theme

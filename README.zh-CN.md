@@ -20,7 +20,7 @@ Roamer 通过 [Shizuku](https://shizuku.rikka.app/) 调用系统 Telephony API �
 - 运营商数据有出处：预置运营商按用户数排序，来源与各市场的核实状态见 [`docs/CARRIER_DATA.md`](docs/CARRIER_DATA.md)，其中一部分市场的顺序尚未核实。
 - 无快照还原：在运行时根据 MCC 实时重导真实值并回写，无需保存历史快照。
 - 强制清除：回写真实值并清除所有卡的覆写层，用于“还原”无法处理的卡。
-- 提权执行的失败原因会按卡显示在应用内日志中。
+- 提权执行的失败原因会按卡显示在应用内日志中。失败的日志还会附带应用版本、Android 版本、设备品牌、Android 用户和 Shizuku 运行身份，可一键复制用于反馈问题。
 - 应用级区域同步：可选择特定应用跟随 SIM 覆写后的区域。
 - 调试友好：Liquid Glass 风格界面，原值与当前值对比展示，技术参数（MCC/MNC/ISO/subId）采用等宽字体显示，支持浅色/深色主题。
 
@@ -95,6 +95,7 @@ com.eigenlux.roamer/
 │   ├── PrivilegedOverrideInstrumentation
 │   ├── PrivilegedSubscriptionReader
 │   ├── RegionLogic
+│   ├── Diagnostics
 │   └── LocaleOverrideController
 ├── data/   # 预设数据与本地状态存储
 ├── ui/     # 玻璃材质、通用控件与主题

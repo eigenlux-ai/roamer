@@ -56,6 +56,8 @@
     <string name="log_level_error">Failed</string>
     <string name="log_level_partial">Partial success</string>
     <string name="log_level_info">Info</string>
+    <string name="action_copy">Copy</string>
+    <string name="action_copied">Copied</string>
 
     <!-- ===== Controller result messages ===== -->
     <string name="err_shizuku_unavailable">Shizuku is not authorized or not running</string>
