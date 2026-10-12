@@ -3,7 +3,6 @@ package com.eigenlux.roamer.core
 import android.content.Context
 import android.icu.util.ULocale
 import android.os.LocaleList
-import android.os.Process
 import android.util.Log
 import com.eigenlux.roamer.data.AppLocaleStore
 
@@ -21,8 +20,6 @@ object LocaleOverrideController {
     private fun localeManager(): Any =
         SystemServices.shizukuInterface(Context.LOCALE_SERVICE, "android.app.ILocaleManager")
 
-    private fun userId(): Int = Process.myUid() / 100000
-
     private fun invokeByName(ilm: Any, name: String, pkg: String, locales: LocaleList?): Any? {
         val method = ilm.javaClass.methods.first { it.name == name }
         var firstString = true
@@ -30,7 +27,7 @@ object LocaleOverrideController {
             when {
                 t == String::class.java && firstString -> { firstString = false; pkg }
                 t == String::class.java -> "com.android.shell"
-                t == Int::class.javaPrimitiveType -> userId()
+                t == Int::class.javaPrimitiveType -> SystemServices.userId()
                 t == LocaleList::class.java -> locales ?: LocaleList.getEmptyLocaleList()
                 t == Boolean::class.javaPrimitiveType -> false
                 else -> null

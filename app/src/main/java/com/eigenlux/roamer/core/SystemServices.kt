@@ -1,6 +1,7 @@
 package com.eigenlux.roamer.core
 
 import android.os.IBinder
+import android.os.Process
 import org.lsposed.hiddenapibypass.HiddenApiBypass
 import rikka.shizuku.ShizukuBinderWrapper
 
@@ -18,6 +19,11 @@ internal object SystemServices {
      * Forces the exemption initializer to run before reflective hidden-API access.
      */
     fun ensureHiddenApiAccess() = Unit
+
+    /**
+     * Returns the Android user Roamer runs in; user-scoped system calls must name it.
+     */
+    fun userId(): Int = Process.myUid() / 100000
 
     /**
      * Resolves [serviceName] from `ServiceManager` and returns its [interfaceName] proxy,

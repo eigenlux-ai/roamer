@@ -93,7 +93,8 @@ object InstrumentationTrigger {
             String::class.java,
         )
         val started = try {
-            method.invoke(am, component, null, flags, args, null, uiAutomationConnection, 0, null)
+            // The instrumentation is only resolvable in the user Roamer is installed in.
+            method.invoke(am, component, null, flags, args, null, uiAutomationConnection, SystemServices.userId(), null)
         } catch (e: InvocationTargetException) {
             throw e.targetException ?: e
         }
