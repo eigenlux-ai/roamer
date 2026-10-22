@@ -1,0 +1,33 @@
+name: No response
+
+# Closes issues labeled needs-info when the reporter has not replied: marked stale after 14 days
+# without activity, closed 7 days later. A reply removes both stale and needs-info.
+on:
+  schedule:
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  issues: write
+
+jobs:
+  stale:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/stale@v11
+        with:
+          only-issue-labels: needs-info
+          days-before-issue-stale: 14
+          days-before-issue-close: 7
+          stale-issue-label: stale
+          stale-issue-message: >
+            This issue is waiting on information from the reporter.
+            It will be closed in 7 days if there is no reply.
+          close-issue-message: >
+            Closing for lack of response. If the problem persists, please reopen
+            with the requested details (for example the copied Log).
+          close-issue-reason: not_planned
+          remove-issue-stale-when-updated: true
+          labels-to-remove-when-unstale: needs-info
+          days-before-pr-stale: -1
+          days-before-pr-close: -1
